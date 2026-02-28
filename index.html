@@ -134,10 +134,8 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         .error-msg { color: var(--error); font-size: 0.875rem; }
         .fetch-hint { margin-top: 0.75rem; font-size: 0.8125rem; color: var(--text-muted); }
-        .api-base-wrap { margin-bottom: 1rem; }
-        .api-base-wrap .label-sm { margin-bottom: 0.35rem; }
-        .api-base-wrap input { width: 100%; padding: 0.5rem 0.75rem; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 0.875rem; }
-        .api-base-wrap input::placeholder { color: var(--text-muted); }
+        .hero-author { font-size: 0.8125rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+        footer { text-align: center; padding: 2rem 1rem; margin-top: 2rem; border-top: 1px solid var(--border); font-size: 0.875rem; color: var(--text-muted); }
 
         /* API Reference */
         .api-docs { padding: 3rem 0 4rem; }
@@ -180,7 +178,8 @@
 <body>
     <div class="wrap">
         <section class="hero">
-            <h1>Image to Text API <span class="green">Powered By AI</span></h1>
+            <p class="hero-author">Sai Shreyas Gubbi Harish</p>
+            <h1>Image to Text API</h1>
             <p>Seamless text extraction for your applications with easy integration via REST API.</p>
             <nav class="nav-links">
                 <a href="#how">How it works</a>
@@ -203,7 +202,7 @@
                 <div class="step">
                     <div class="step-num">2</div>
                     <h3>Extract</h3>
-                    <p>Our AI-powered engine analyzes and extracts text without relying on templates.</p>
+                    <p>The engine analyzes and extracts text without relying on templates.</p>
                 </div>
                 <div class="step">
                     <div class="step-num">3</div>
@@ -213,7 +212,7 @@
                 <div class="step">
                     <div class="step-num">4</div>
                     <h3>Export</h3>
-                    <p>Get structured JSON with extracted text and confidence. Use via API or web UI.</p>
+                    <p>Get extracted text and confidence. Use via API or web UI.</p>
                 </div>
             </div>
         </section>
@@ -223,10 +222,6 @@
                 <h2>Try it <span class="green">yourself</span></h2>
             </div>
             <div class="try-card">
-                <div class="api-base-wrap">
-                    <div class="label-sm">API base URL (use this server or your Lambda URL)</div>
-                    <input type="url" id="apiBaseInput" placeholder="Leave empty for this server · or paste Lambda URL e.g. https://xxxx.execute-api.us-east-1.amazonaws.com/prod" autocomplete="off">
-                </div>
                 <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
                     <div class="label">Click or drag an image here</div>
                     <div class="filename" id="filename"></div>
@@ -238,6 +233,7 @@
                     <div class="result-meta">
                         <span class="confidence-badge" id="confidenceBadge"></span>
                         <span id="resultFilename" style="font-size:0.8125rem;color:var(--text-muted)"></span>
+                        <span id="resultS3Key" style="display:none;font-size:0.75rem;color:var(--text-muted);" title="Image stored in S3"></span>
                     </div>
                     <div class="job-id-row" id="jobIdRow" style="display:none;">
                         <span class="label-sm" style="margin:0;">Job ID:</span>
@@ -264,14 +260,13 @@
                     </div>
                 </div>
 
-                <p class="fetch-hint">Use this server (leave API URL empty) at <strong>http://localhost:3001</strong>, or open this page anywhere and paste your <strong>Lambda URL</strong> above to use the web UI with the deployed API.</p>
             </div>
         </section>
 
         <section class="section api-docs" id="api-docs">
             <div class="section-title">
                 <h2>API Reference – <span class="green">CRUD &amp; result format</span></h2>
-                <p style="color:var(--text-muted);font-size:0.9375rem;margin-top:0.5rem;">All endpoints return JSON. Base URL: <code style="background:var(--surface);padding:0.2rem 0.4rem;border-radius:4px;">/</code> (e.g. <code style="background:var(--surface);padding:0.2rem 0.4rem;border-radius:4px;">http://localhost:3001</code>)</p>
+                <p style="color:var(--text-muted);font-size:0.9375rem;margin-top:0.5rem;">All endpoints return JSON.</p>
             </div>
 
             <div class="api-route">
@@ -319,11 +314,14 @@
                 <div class="json-block">{"success": true}</div>
             </div>
         </section>
+
+        <footer>
+            Sai Shreyas Gubbi Harish | 24194956
+        </footer>
     </div>
 
     <script>
-        // Set at build time by Amplify (replace __API_BASE_URL__ with your Lambda URL)
-        const DEFAULT_API_BASE = '__API_BASE_URL__';
+        const DEFAULT_API_BASE = 'https://xkdvpogqt0.execute-api.us-east-1.amazonaws.com/prod';
 
         const fileInput = document.getElementById('fileInput');
         const filenameEl = document.getElementById('filename');
@@ -332,6 +330,7 @@
         const resultSection = document.getElementById('resultSection');
         const confidenceBadge = document.getElementById('confidenceBadge');
         const resultFilename = document.getElementById('resultFilename');
+        const resultS3Key = document.getElementById('resultS3Key');
         const uploadZone = document.getElementById('uploadZone');
         const jobIdRow = document.getElementById('jobIdRow');
         const resultJobId = document.getElementById('resultJobId');
@@ -343,23 +342,9 @@
         const updateTextWrap = document.getElementById('updateTextWrap');
         const updateTextInput = document.getElementById('updateTextInput');
         const fetchResultArea = document.getElementById('fetchResultArea');
-        const apiBaseInput = document.getElementById('apiBaseInput');
-
-        const API_BASE_KEY = 'imageToTextApiBase';
-        try {
-            const saved = localStorage.getItem(API_BASE_KEY);
-            if (saved != null && saved !== '') {
-                apiBaseInput.value = saved;
-            } else if (DEFAULT_API_BASE && DEFAULT_API_BASE !== '__API_BASE_URL__') {
-                apiBaseInput.value = DEFAULT_API_BASE;
-            }
-        } catch (_) {}
-        apiBaseInput.addEventListener('change', function () { try { localStorage.setItem(API_BASE_KEY, this.value.trim()); } catch (_) {} });
-        apiBaseInput.addEventListener('input', function () { try { localStorage.setItem(API_BASE_KEY, this.value.trim()); } catch (_) {} });
 
         function getApiBase() {
-            const custom = (apiBaseInput && apiBaseInput.value) ? apiBaseInput.value.trim() : '';
-            if (custom) return custom.replace(/\/$/, '');
+            if (DEFAULT_API_BASE) return DEFAULT_API_BASE.replace(/\/$/, '');
             if (typeof window !== 'undefined' && window.location && window.location.origin) return window.location.origin;
             return '';
         }
@@ -507,6 +492,7 @@
             output.innerHTML = '<span class="loading"><span class="spinner"></span>Processing…</span>';
             confidenceBadge.textContent = '';
             resultFilename.textContent = '';
+            if (resultS3Key) resultS3Key.style.display = 'none';
             submitBtn.disabled = true;
 
             try {
@@ -548,6 +534,12 @@
                     confidenceBadge.className = 'confidence-badge ' + (conf >= 80 ? 'high' : conf >= 50 ? 'mid' : 'low');
                 }
                 resultFilename.textContent = data.filename ? 'File: ' + data.filename : '';
+                if (data.s3Key && resultS3Key) {
+                    resultS3Key.style.display = 'inline';
+                    resultS3Key.textContent = '✓ Stored in S3: ' + data.s3Key;
+                } else if (resultS3Key) {
+                    resultS3Key.style.display = 'none';
+                }
                 if (data.jobId) {
                     jobIdRow.style.display = 'flex';
                     resultJobId.textContent = data.jobId;
@@ -562,7 +554,8 @@
                         text: (data.text || '').trim(),
                         confidence: conf,
                         filename: data.filename || null,
-                        jobId: data.jobId || null
+                        jobId: data.jobId || null,
+                        s3Key: data.s3Key || null
                     }
                 };
                 output.innerHTML = formatJson(apiStyle);
