@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
     <style>
-        :root {
+         :root {
             --bg: #0a0a0f;
             --surface: #12121a;
             --surface-2: #1a1a26;
@@ -22,50 +23,133 @@
             --radius: 12px;
             --radius-sm: 8px;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
-        .wrap { max-width: 1100px; margin: 0 auto; padding: 0 1.25rem; }
-
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'DM Sans', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        
+        .wrap {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 1.25rem;
+        }
         /* Hero */
+        
         .hero {
             padding: 4rem 0 3rem;
             text-align: center;
         }
+        
         .hero h1 {
             font-size: clamp(1.75rem, 4vw, 2.5rem);
             font-weight: 700;
             color: #fff;
         }
-        .hero h1 .green { color: var(--accent); }
+        
+        .hero h1 .green {
+            color: var(--accent);
+        }
+        
         .hero p {
             color: var(--text-muted);
             margin-top: 0.75rem;
             font-size: 1.0625rem;
         }
-        .nav-links { margin-top: 1.25rem; display: flex; gap: 1.25rem; justify-content: center; flex-wrap: wrap; }
-        .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 0.875rem; }
-        .nav-links a:hover { color: var(--accent); }
-
-        .section { padding: 3.5rem 0; }
-        .section-title { text-align: center; margin-bottom: 2rem; }
-        .section-title h2 { font-size: 1.5rem; color: #fff; }
-        .section-title .green { color: var(--accent); }
-
+        
+        .nav-links {
+            margin-top: 1.25rem;
+            display: flex;
+            gap: 1.25rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+        
+        .nav-links a:hover {
+            color: var(--accent);
+        }
+        
+        .section {
+            padding: 3.5rem 0;
+        }
+        
+        .section-title {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .section-title h2 {
+            font-size: 1.5rem;
+            color: #fff;
+        }
+        
+        .section-title .green {
+            color: var(--accent);
+        }
         /* How it works */
-        .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1.5rem; }
+        
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        
         .step {
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--radius);
             padding: 1.25rem;
         }
-        .step-num { width: 32px; height: 32px; background: var(--accent-dim); color: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.875rem; margin-bottom: 0.75rem; }
-        .step h3 { font-size: 0.9375rem; color: #fff; margin-bottom: 0.35rem; }
-        .step p { font-size: 0.8125rem; color: var(--text-muted); }
-
+        
+        .step-num {
+            width: 32px;
+            height: 32px;
+            background: var(--accent-dim);
+            color: var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.875rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .step h3 {
+            font-size: 0.9375rem;
+            color: #fff;
+            margin-bottom: 0.35rem;
+        }
+        
+        .step p {
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+        }
         /* Try it */
-        .try-section { padding: 3rem 0 4rem; }
-        .try-section .section-title { margin-bottom: 1.5rem; }
+        
+        .try-section {
+            padding: 3rem 0 4rem;
+        }
+        
+        .try-section .section-title {
+            margin-bottom: 1.5rem;
+        }
+        
         .try-card {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -73,6 +157,7 @@
             padding: 1.5rem;
             margin-bottom: 1.5rem;
         }
+        
         .upload-zone {
             border: 2px dashed var(--border);
             border-radius: var(--radius-sm);
@@ -81,10 +166,29 @@
             cursor: pointer;
             transition: border-color 0.2s, background 0.2s;
         }
-        .upload-zone:hover, .upload-zone.dragover { border-color: var(--accent); background: var(--accent-dim); }
-        .upload-zone input[type="file"] { display: none; }
-        .upload-zone .label { color: var(--text-muted); font-size: 0.875rem; }
-        .upload-zone .filename { margin-top: 0.5rem; font-size: 0.8125rem; color: var(--accent); word-break: break-all; }
+        
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: var(--accent);
+            background: var(--accent-dim);
+        }
+        
+        .upload-zone input[type="file"] {
+            display: none;
+        }
+        
+        .upload-zone .label {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+        
+        .upload-zone .filename {
+            margin-top: 0.5rem;
+            font-size: 0.8125rem;
+            color: var(--accent);
+            word-break: break-all;
+        }
+        
         .btn-extract {
             width: 100%;
             margin-top: 1rem;
@@ -98,22 +202,56 @@
             border-radius: var(--radius-sm);
             cursor: pointer;
         }
-        .btn-extract:hover:not(:disabled) { background: var(--accent-hover); }
-        .btn-extract:disabled { opacity: 0.5; cursor: not-allowed; }
-
+        
+        .btn-extract:hover:not(:disabled) {
+            background: var(--accent-hover);
+        }
+        
+        .btn-extract:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
         /* Result + JSON style */
-        .result-section { display: none; margin-top: 1.5rem; }
-        .result-section.visible { display: block; }
-        .result-meta { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-bottom: 0.75rem; }
+        
+        .result-section {
+            display: none;
+            margin-top: 1.5rem;
+        }
+        
+        .result-section.visible {
+            display: block;
+        }
+        
+        .result-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+        
         .confidence-badge {
             padding: 0.35rem 0.75rem;
             border-radius: 999px;
             font-size: 0.8125rem;
             font-weight: 600;
         }
-        .confidence-badge.high { background: rgba(34, 197, 94, 0.2); color: var(--accent); }
-        .confidence-badge.mid { background: rgba(234, 179, 8, 0.2); color: #eab308; }
-        .confidence-badge.low { background: rgba(239, 68, 68, 0.2); color: var(--error); }
+        
+        .confidence-badge.high {
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--accent);
+        }
+        
+        .confidence-badge.mid {
+            background: rgba(234, 179, 8, 0.2);
+            color: #eab308;
+        }
+        
+        .confidence-badge.low {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--error);
+        }
+        
         .json-block {
             background: #0d1117;
             border: 1px solid var(--border);
@@ -126,20 +264,77 @@
             word-break: break-word;
             color: #e6edf3;
         }
-        .json-key { color: #7ee787; }
-        .json-string { color: #a5d6ff; }
-        .json-number { color: #79c0ff; }
-        .loading { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--text-muted); font-size: 0.875rem; }
-        .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .error-msg { color: var(--error); font-size: 0.875rem; }
-        .fetch-hint { margin-top: 0.75rem; font-size: 0.8125rem; color: var(--text-muted); }
-        .hero-author { font-size: 0.8125rem; color: var(--text-muted); margin-bottom: 0.5rem; }
-        footer { text-align: center; padding: 2rem 1rem; margin-top: 2rem; border-top: 1px solid var(--border); font-size: 0.875rem; color: var(--text-muted); }
-
+        
+        .json-key {
+            color: #7ee787;
+        }
+        
+        .json-string {
+            color: #a5d6ff;
+        }
+        
+        .json-number {
+            color: #79c0ff;
+        }
+        
+        .loading {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+        
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+        
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        .error-msg {
+            color: var(--error);
+            font-size: 0.875rem;
+        }
+        
+        .fetch-hint {
+            margin-top: 0.75rem;
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+        }
+        
+        .hero-author {
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 2rem 1rem;
+            margin-top: 2rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
         /* API Reference */
-        .api-docs { padding: 3rem 0 4rem; }
-        .api-docs .section-title { margin-bottom: 1.5rem; }
+        
+        .api-docs {
+            padding: 3rem 0 4rem;
+        }
+        
+        .api-docs .section-title {
+            margin-bottom: 1.5rem;
+        }
+        
         .api-route {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -147,34 +342,174 @@
             padding: 1.25rem;
             margin-bottom: 1rem;
         }
-        .api-route h3 { font-size: 1rem; color: #fff; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-        .method { font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 4px; }
-        .method.post { background: rgba(34, 197, 94, 0.25); color: var(--accent); }
-        .method.get { background: rgba(59, 130, 246, 0.25); color: #60a5fa; }
-        .method.put { background: rgba(234, 179, 8, 0.25); color: #eab308; }
-        .method.delete { background: rgba(239, 68, 68, 0.25); color: var(--error); }
-        .api-path { font-family: 'Consolas', monospace; font-size: 0.875rem; color: var(--text-muted); }
-        .api-desc { font-size: 0.8125rem; color: var(--text-muted); margin: 0.5rem 0 0.75rem; }
-        .api-docs .json-block { margin-top: 0.5rem; font-size: 0.75rem; padding: 0.75rem; }
-        .api-docs .json-block + .label-sm { margin-top: 0.5rem; }
-        .label-sm { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
-        .job-id-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
-        .job-id-row .job-id-value { font-family: Consolas, monospace; font-size: 0.8125rem; color: var(--accent); word-break: break-all; }
-        .btn-copy { padding: 0.25rem 0.5rem; font-size: 0.75rem; background: var(--border); color: var(--text); border: none; border-radius: 4px; cursor: pointer; }
-        .btn-copy:hover { background: var(--accent); color: #000; }
-        .job-id-section { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
-        .job-id-section .label-sm { margin-bottom: 0.5rem; }
-        .job-id-input-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
-        .job-id-input-row input { flex: 1; min-width: 200px; padding: 0.5rem 0.75rem; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: Consolas, monospace; font-size: 0.875rem; }
-        .job-id-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-        .btn-sm { padding: 0.5rem 0.75rem; font-size: 0.8125rem; font-family: inherit; border-radius: var(--radius-sm); cursor: pointer; border: none; font-weight: 600; }
-        .btn-get { background: rgba(59, 130, 246, 0.25); color: #60a5fa; }
-        .btn-put { background: rgba(234, 179, 8, 0.25); color: #eab308; }
-        .btn-del { background: rgba(239, 68, 68, 0.25); color: var(--error); }
-        .btn-sm:hover { opacity: 0.9; }
-        .fetch-result { margin-top: 0.75rem; }
+        
+        .api-route h3 {
+            font-size: 1rem;
+            color: #fff;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .method {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+        }
+        
+        .method.post {
+            background: rgba(34, 197, 94, 0.25);
+            color: var(--accent);
+        }
+        
+        .method.get {
+            background: rgba(59, 130, 246, 0.25);
+            color: #60a5fa;
+        }
+        
+        .method.put {
+            background: rgba(234, 179, 8, 0.25);
+            color: #eab308;
+        }
+        
+        .method.delete {
+            background: rgba(239, 68, 68, 0.25);
+            color: var(--error);
+        }
+        
+        .api-path {
+            font-family: 'Consolas', monospace;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+        
+        .api-desc {
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            margin: 0.5rem 0 0.75rem;
+        }
+        
+        .api-docs .json-block {
+            margin-top: 0.5rem;
+            font-size: 0.75rem;
+            padding: 0.75rem;
+        }
+        
+        .api-docs .json-block+.label-sm {
+            margin-top: 0.5rem;
+        }
+        
+        .label-sm {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+        
+        .job-id-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+        }
+        
+        .job-id-row .job-id-value {
+            font-family: Consolas, monospace;
+            font-size: 0.8125rem;
+            color: var(--accent);
+            word-break: break-all;
+        }
+        
+        .btn-copy {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            background: var(--border);
+            color: var(--text);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .btn-copy:hover {
+            background: var(--accent);
+            color: #000;
+        }
+        
+        .job-id-section {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+        
+        .job-id-section .label-sm {
+            margin-bottom: 0.5rem;
+        }
+        
+        .job-id-input-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+        }
+        
+        .job-id-input-row input {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.5rem 0.75rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-family: Consolas, monospace;
+            font-size: 0.875rem;
+        }
+        
+        .job-id-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .btn-sm {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.8125rem;
+            font-family: inherit;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            border: none;
+            font-weight: 600;
+        }
+        
+        .btn-get {
+            background: rgba(59, 130, 246, 0.25);
+            color: #60a5fa;
+        }
+        
+        .btn-put {
+            background: rgba(234, 179, 8, 0.25);
+            color: #eab308;
+        }
+        
+        .btn-del {
+            background: rgba(239, 68, 68, 0.25);
+            color: var(--error);
+        }
+        
+        .btn-sm:hover {
+            opacity: 0.9;
+        }
+        
+        .fetch-result {
+            margin-top: 0.75rem;
+        }
     </style>
 </head>
+
 <body>
     <div class="wrap">
         <section class="hero">
@@ -269,35 +604,25 @@
                 <p style="color:var(--text-muted);font-size:0.9375rem;margin-top:0.5rem;">All endpoints return JSON.</p>
                 <div class="api-base-url-box" style="margin-top:1rem;padding:1rem 1.25rem;background:rgba(0,255,136,0.08);border:1px solid var(--green);border-radius:8px;">
                     <div style="font-size:0.8125rem;color:var(--text-muted);margin-bottom:0.35rem;">Lambda API base URL — use this for POST, GET, PUT, DELETE</div>
-                    <code style="font-size:1rem;word-break:break-all;color:var(--green);">https://xkdvpogqt0.execute-api.us-east-1.amazonaws.com/prod</code>
+                    <code style="font-size:1rem;word-break:break-all;color:var(--green);">https://xkdvpogqt0.execute-api.us-east-1.amazonaws.com/prod/ocr</code>
                 </div>
             </div>
 
             <div class="api-route">
                 <h3><span class="method post">POST</span> <span class="api-path">/ocr</span></h3>
-                <p class="api-desc">Upload an image (multipart form field <code>image</code>) to extract text. Optional body field: <code>language</code> (default: <code>eng</code>). Returns a unique <strong>jobId</strong> (UUID) — save it to fetch, update, or delete the job later.</p>
+                <p class="api-desc">Upload an image (multipart form field <code>image</code>) to extract text. Optional body field: <code>language</code> (default: <code>eng</code>). Returns a unique <strong>jobId</strong> (UUID) — save it to fetch, update, or delete the
+                    job later.</p>
                 <div class="label-sm">Response (200)</div>
-                <div class="json-block">{
-  "success": true,
-  "jobId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "filename": "receipt.jpg",
-  "language": "eng",
-  "text": "Extracted text here...",
-  "confidence": 97
-}</div>
+                <div class="json-block">{ "success": true, "jobId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "filename": "receipt.jpg", "language": "eng", "text": "Extracted text here...", "confidence": 97 }
+                </div>
             </div>
 
             <div class="api-route">
                 <h3><span class="method get">GET</span> <span class="api-path">/ocr/:jobId</span></h3>
                 <p class="api-desc">Fetch a stored OCR result by job ID (the UUID returned from POST /ocr).</p>
                 <div class="label-sm">Response (200)</div>
-                <div class="json-block">{
-  "jobId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "filename": "receipt.jpg",
-  "text": "Extracted text here...",
-  "confidence": 97,
-  "createdAt": "2025-02-16T12:00:00.000Z"
-}</div>
+                <div class="json-block">{ "jobId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "filename": "receipt.jpg", "text": "Extracted text here...", "confidence": 97, "createdAt": "2025-02-16T12:00:00.000Z" }
+                </div>
                 <div class="label-sm">Error: 404 Job not found</div>
                 <div class="json-block">{"error": "Job not found"}</div>
             </div>
@@ -358,7 +683,10 @@
             filenameEl.textContent = file ? file.name : '';
             submitBtn.disabled = !file;
         });
-        uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
         uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
         uploadZone.addEventListener('drop', (e) => {
             e.preventDefault();
@@ -374,18 +702,27 @@
         copyJobIdBtn.addEventListener('click', () => {
             const id = resultJobId.textContent;
             if (id && navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(id).then(() => { copyJobIdBtn.textContent = 'Copied!'; setTimeout(() => { copyJobIdBtn.textContent = 'Copy'; }, 1500); });
+                navigator.clipboard.writeText(id).then(() => {
+                    copyJobIdBtn.textContent = 'Copied!';
+                    setTimeout(() => {
+                        copyJobIdBtn.textContent = 'Copy';
+                    }, 1500);
+                });
             }
         });
 
         function getJobId() {
             const id = (jobIdInput.value || '').trim();
-            if (!id) { alert('Enter a Job ID first'); return null; }
+            if (!id) {
+                alert('Enter a Job ID first');
+                return null;
+            }
             return id;
         }
 
-        fetchJobBtn.addEventListener('click', async () => {
-            const jobId = getJobId(); if (!jobId) return;
+        fetchJobBtn.addEventListener('click', async() => {
+            const jobId = getJobId();
+            if (!jobId) return;
             const base = getApiBase();
             fetchResultArea.style.display = 'block';
             fetchResultArea.innerHTML = '<span class="loading"><span class="spinner"></span>Fetching…</span>';
@@ -404,18 +741,26 @@
             }
         });
 
-        updateJobBtn.addEventListener('click', async () => {
-            const jobId = getJobId(); if (!jobId) return;
+        updateJobBtn.addEventListener('click', async() => {
+            const jobId = getJobId();
+            if (!jobId) return;
             const text = (updateTextInput.value || '').trim();
-            if (!text) { alert('Enter new text in the "New text (for PUT)" field first'); return; }
+            if (!text) {
+                alert('Enter new text in the "New text (for PUT)" field first');
+                return;
+            }
             const base = getApiBase();
             fetchResultArea.style.display = 'block';
             fetchResultArea.innerHTML = '<span class="loading"><span class="spinner"></span>Updating…</span>';
             try {
                 const res = await fetch((base || '') + '/ocr/' + encodeURIComponent(jobId), {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: text })
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: text
+                    })
                 });
                 const data = await res.json();
                 if (!res.ok) {
@@ -428,14 +773,17 @@
             }
         });
 
-        deleteJobBtn.addEventListener('click', async () => {
-            const jobId = getJobId(); if (!jobId) return;
+        deleteJobBtn.addEventListener('click', async() => {
+            const jobId = getJobId();
+            if (!jobId) return;
             if (!confirm('Delete this job? This cannot be undone.')) return;
             const base = getApiBase();
             fetchResultArea.style.display = 'block';
             fetchResultArea.innerHTML = '<span class="loading"><span class="spinner"></span>Deleting…</span>';
             try {
-                const res = await fetch((base || '') + '/ocr/' + encodeURIComponent(jobId), { method: 'DELETE' });
+                const res = await fetch((base || '') + '/ocr/' + encodeURIComponent(jobId), {
+                    method: 'DELETE'
+                });
                 const data = await res.json();
                 if (!res.ok) {
                     fetchResultArea.innerHTML = '<span class="error-msg">' + escapeHtml(data.error || data.message || 'Request failed') + '</span>';
@@ -461,7 +809,7 @@
                 if (o === null) return '<span class="json-number">null</span>';
                 if (typeof o === 'number') return '<span class="json-number">' + o + '</span>';
                 if (typeof o === 'boolean') return '<span class="json-number">' + o + '</span>';
-                if (typeof o === 'string') return '<span class="json-string">"' + escapeHtml(String(o).replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/\n/g,'\\n').replace(/\r/g,'\\r')) + '"</span>';
+                if (typeof o === 'string') return '<span class="json-string">"' + escapeHtml(String(o).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r')) + '"</span>';
                 if (Array.isArray(o)) {
                     if (o.length === 0) return '[]';
                     return '[\n' + o.map((v, i) => nextIndent + fmt(v, nextIndent) + (i < o.length - 1 ? ',' : '')).join('\n') + '\n' + indent + ']';
@@ -506,14 +854,23 @@
                     const url = base + '/ocr/base64';
                     res = await fetch(url, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ image: dataUrl, language: 'eng', filename: file.name })
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            image: dataUrl,
+                            language: 'eng',
+                            filename: file.name
+                        })
                     });
                 } else {
                     const formData = new FormData();
                     formData.append('image', file);
                     const url = base ? (base + '/ocr') : '/ocr';
-                    res = await fetch(url, { method: 'POST', body: formData });
+                    res = await fetch(url, {
+                        method: 'POST',
+                        body: formData
+                    });
                 }
                 let data;
                 try {
@@ -525,9 +882,9 @@
 
                 if (!res.ok) {
                     const msg = data.message || data.error || 'Request failed';
-                    const hint = (res.status === 404)
-                        ? ' If using Lambda, set the API base URL above to e.g. https://your-api-id.execute-api.us-east-1.amazonaws.com/prod and run <code>node deploy.js</code> to create routes.'
-                        : '';
+                    const hint = (res.status === 404) ?
+                        ' If using Lambda, set the API base URL above to e.g. https://your-api-id.execute-api.us-east-1.amazonaws.com/prod and run <code>node deploy.js</code> to create routes.' :
+                        '';
                     output.innerHTML = '<span class="error-msg">' + escapeHtml(msg) + '.' + hint + '</span>';
                     return;
                 }
@@ -566,9 +923,9 @@
             } catch (err) {
                 const msg = err.message || String(err);
                 const isFetch = /failed to fetch|networkerror|load failed/i.test(msg);
-                const tip = isFetch
-                    ? ' If you’re not running the app from the same server: set the <strong>API base URL</strong> above to your Lambda URL (e.g. <code>https://xxxx.execute-api.us-east-1.amazonaws.com/prod</code>). If running locally, start the server: <code>cd lambda-code && npm start</code>.'
-                    : ' ' + escapeHtml(msg);
+                const tip = isFetch ?
+                    ' If you’re not running the app from the same server: set the <strong>API base URL</strong> above to your Lambda URL (e.g. <code>https://xxxx.execute-api.us-east-1.amazonaws.com/prod</code>). If running locally, start the server: <code>cd lambda-code && npm start</code>.' :
+                    ' ' + escapeHtml(msg);
                 output.innerHTML = '<span class="error-msg">' + (isFetch ? 'Cannot connect to the API.' + tip : tip) + '</span>';
             } finally {
                 submitBtn.disabled = false;
@@ -576,4 +933,5 @@
         }
     </script>
 </body>
+
 </html>
