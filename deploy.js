@@ -93,6 +93,15 @@ async function createIAMRole() {
         const role = await iam.getRole({ RoleName: ROLE_NAME }).promise();
         console.log(`IAM Role exists: ${ROLE_NAME}`);
         await ensureTextractDynamoDBPolicy();
+        try {
+            await iam.attachRolePolicy({
+                RoleName: ROLE_NAME,
+                PolicyArn: "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+            }).promise();
+            console.log("S3 policy attached to role");
+        } catch (e) {
+            if (e.code !== "LimitExceededException" && e.code !== "InvalidInputException") throw e;
+        }
         return role.Role.Arn;
     } catch {
         console.log(`Creating IAM Role: ${ROLE_NAME}...`);
@@ -130,23 +139,63 @@ async function createIAMRole() {
     }
 }
 
+const GSI_NAME = "ByCreatedAt";
+const GSI_PK = "gsiPk";
+const GSI_SK = "gsiSk";
+
 /* ---------- DynamoDB Table ---------- */
 async function createDynamoDBTable() {
     try {
-        await dynamodb.describeTable({ TableName: DYNAMODB_TABLE }).promise();
+        const desc = await dynamodb.describeTable({ TableName: DYNAMODB_TABLE }).promise();
         console.log(`DynamoDB table exists: ${DYNAMODB_TABLE}`);
+        const hasGsi = (desc.Table.GlobalSecondaryIndexes || []).some(g => g.IndexName === GSI_NAME);
+        if (!hasGsi) {
+            console.log(`Adding GSI ${GSI_NAME} to ${DYNAMODB_TABLE} (query jobs by date)...`);
+            await dynamodb.updateTable({
+                TableName: DYNAMODB_TABLE,
+                AttributeDefinitions: [
+                    { AttributeName: GSI_PK, AttributeType: "S" },
+                    { AttributeName: GSI_SK, AttributeType: "S" }
+                ],
+                GlobalSecondaryIndexUpdates: [
+                    {
+                        Create: {
+                            IndexName: GSI_NAME,
+                            KeySchema: [
+                                { AttributeName: GSI_PK, KeyType: "HASH" },
+                                { AttributeName: GSI_SK, KeyType: "RANGE" }
+                            ],
+                            Projection: { ProjectionType: "ALL" }
+                        }
+                    }
+                ]
+            }).promise();
+            console.log(`GSI ${GSI_NAME} created; wait for ACTIVE in AWS Console if needed.`);
+        }
     } catch (err) {
         if (err.code === "ResourceNotFoundException") {
-            console.log(`Creating DynamoDB table: ${DYNAMODB_TABLE}...`);
+            console.log(`Creating DynamoDB table: ${DYNAMODB_TABLE} with GSI ${GSI_NAME}...`);
             await dynamodb.createTable({
                 TableName: DYNAMODB_TABLE,
                 AttributeDefinitions: [
-                    { AttributeName: "jobId", AttributeType: "S" }
+                    { AttributeName: "jobId", AttributeType: "S" },
+                    { AttributeName: GSI_PK, AttributeType: "S" },
+                    { AttributeName: GSI_SK, AttributeType: "S" }
                 ],
                 KeySchema: [
                     { AttributeName: "jobId", KeyType: "HASH" }
                 ],
-                BillingMode: "PAY_PER_REQUEST"
+                BillingMode: "PAY_PER_REQUEST",
+                GlobalSecondaryIndexes: [
+                    {
+                        IndexName: GSI_NAME,
+                        KeySchema: [
+                            { AttributeName: GSI_PK, KeyType: "HASH" },
+                            { AttributeName: GSI_SK, KeyType: "RANGE" }
+                        ],
+                        Projection: { ProjectionType: "ALL" }
+                    }
+                ]
             }).promise();
             console.log(`DynamoDB table created: ${DYNAMODB_TABLE}`);
             console.log("Waiting for table to be active...");
@@ -203,12 +252,13 @@ async function deployLambda(roleArn) {
             MemorySize: 1024,
             Environment: {
                 Variables: {
-                    S3_BUCKET
+                    S3_BUCKET,
+                    TABLE_NAME: DYNAMODB_TABLE
                 }
             }
         }).promise();
 
-        console.log("Lambda configuration updated");
+        console.log("Lambda configuration updated (S3_BUCKET, TABLE_NAME)");
     } catch (err) {
         if (err.code === "ResourceNotFoundException") {
             await lambda.createFunction({
@@ -222,12 +272,35 @@ async function deployLambda(roleArn) {
                 Publish: true,
                 Environment: {
                     Variables: {
-                        S3_BUCKET
+                        S3_BUCKET,
+                        TABLE_NAME: DYNAMODB_TABLE
                     }
                 }
             }).promise();
 
             console.log("Lambda function created");
+        } else {
+            throw err;
+        }
+    }
+}
+
+/* ---------- Update Lambda env only (run when code unchanged so S3_BUCKET/TABLE_NAME are always set) ---------- */
+async function updateLambdaEnv() {
+    try {
+        await lambda.updateFunctionConfiguration({
+            FunctionName: FUNCTION_NAME,
+            Environment: {
+                Variables: {
+                    S3_BUCKET,
+                    TABLE_NAME: DYNAMODB_TABLE
+                }
+            }
+        }).promise();
+        console.log("Lambda env updated (S3_BUCKET, TABLE_NAME)");
+    } catch (err) {
+        if (err.code === "ResourceNotFoundException") {
+            console.warn("Lambda not found; run deploy again after code change to create it.");
         } else {
             throw err;
         }
@@ -347,7 +420,8 @@ async function createApiGateway() {
             await deployLambda(roleArn);
             console.log("✅ Lambda updated");
         } else {
-            console.log("✅ Lambda already up to date");
+            await updateLambdaEnv();
+            console.log("✅ Lambda code unchanged; env (S3_BUCKET, TABLE_NAME) refreshed");
         }
 
         await createApiGateway();

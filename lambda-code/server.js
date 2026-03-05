@@ -39,7 +39,7 @@ const AWS_REGION = process.env.AWS_REGION || "us-east-1";
 const dbClient = new DynamoDBClient({ region: AWS_REGION });
 const textractClient = new TextractClient({ region: AWS_REGION });
 const s3Client = new S3Client({ region: AWS_REGION });
-const TABLE_NAME = "OCRJobs";
+const TABLE_NAME = process.env.TABLE_NAME || "OCRJobs";
 const S3_BUCKET = process.env.S3_BUCKET || "";
 
 // ========================
@@ -184,7 +184,11 @@ const processOCR = async (imagePath, language = "eng") => {
 
 // Upload file to S3 (key: jobId/filename). Returns S3 key or null if bucket not set or upload fails.
 const uploadImageToS3 = async (filePath, jobId, filename) => {
-    if (!S3_BUCKET || !fs.existsSync(filePath)) return null;
+    if (!S3_BUCKET) {
+        if (process.env.AWS_LAMBDA_FUNCTION_NAME) console.warn("S3_BUCKET not set in Lambda env; images will not be stored in S3.");
+        return null;
+    }
+    if (!fs.existsSync(filePath)) return null;
     const ext = path.extname(filename) || ".png";
     const safeName = (path.basename(filename) || "image").replace(/[^a-zA-Z0-9._-]/g, "_");
     const key = `${jobId}/${safeName}`;
@@ -204,17 +208,27 @@ const uploadImageToS3 = async (filePath, jobId, filename) => {
     }
 };
 
-// Save to DynamoDB (optional s3Key)
+// Save to DynamoDB (optional s3Key). Includes GSI keys so you can query by date (index ByCreatedAt).
 const saveOCRRecord = async (jobId, filename, text, confidence, s3Key = null) => {
+    if (!TABLE_NAME) throw new Error("TABLE_NAME (DynamoDB) not configured");
+    const createdAt = new Date().toISOString();
     const item = {
         jobId: { S: jobId },
         filename: { S: filename },
         text: { S: text },
-        confidence: { N: confidence.toString() },
-        createdAt: { S: new Date().toISOString() }
+        confidence: { N: String(confidence) },
+        createdAt: { S: createdAt },
+        gsiPk: { S: "JOB" },
+        gsiSk: { S: createdAt }
     };
     if (s3Key) item.s3Key = { S: s3Key };
-    await dbClient.send(new PutItemCommand({ TableName: TABLE_NAME, Item: item }));
+    try {
+        await dbClient.send(new PutItemCommand({ TableName: TABLE_NAME, Item: item }));
+        if (process.env.AWS_LAMBDA_FUNCTION_NAME) console.log("DynamoDB save OK:", TABLE_NAME, jobId);
+    } catch (e) {
+        console.error("DynamoDB PutItem failed:", e.name || e.code, e.message);
+        throw new Error(`DynamoDB save failed: ${e.message || e.code || String(e)}`);
+    }
 };
 
 // ========================
