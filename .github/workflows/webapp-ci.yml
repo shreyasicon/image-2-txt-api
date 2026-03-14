@@ -29,8 +29,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: webapp/scalable/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -58,8 +56,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: webapp/scalable/package-lock.json
 
       - name: Install dependencies
         working-directory: webapp/scalable
@@ -70,6 +66,7 @@ jobs:
         run: npm run build
         env:
           NEXT_PUBLIC_OCR_API_BASE: ${{ vars.NEXT_PUBLIC_OCR_API_BASE || 'https://xkdvpogqt0.execute-api.us-east-1.amazonaws.com/prod' }}
+          NEXT_PUBLIC_TRANSLATE_API_BASE: ${{ vars.NEXT_PUBLIC_TRANSLATE_API_BASE || 'https://t3jb8c44xi.execute-api.us-east-1.amazonaws.com' }}
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v2
@@ -78,3 +75,6 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_KEY }}
         with:
           projectBaseDir: webapp/scalable
+          args: >
+            -Dsonar.organization=shreyasicon
+            -Dsonar.projectKey=image-2-txt-api

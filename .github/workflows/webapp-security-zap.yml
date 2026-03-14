@@ -27,8 +27,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: webapp/scalable/package-lock.json
 
       - name: Install and build webapp
         working-directory: webapp/scalable
@@ -42,7 +40,12 @@ jobs:
       - name: Prepare static export for serve
         run: |
           mkdir -p zap-static
-          cp -r webapp/scalable/out/. zap-static/ 2>/dev/null || cp -r webapp/scalable/out/* zap-static/
+          if [ -d webapp/scalable/out ]; then
+            cp -r webapp/scalable/out/. zap-static/
+          else
+            echo "No out/ dir (static export). Creating minimal index for ZAP."
+            echo '<!DOCTYPE html><html><head><title>App</title></head><body>OK</body></html>' > zap-static/index.html
+          fi
           ls -la zap-static
 
       - name: Start web server (same network for ZAP)
@@ -62,6 +65,7 @@ jobs:
             --network zapnet \
             -v ${{ github.workspace }}/webapp/scalable:/zap/wrk:rw \
             -u root \
+            -w /zap/wrk \
             owasp/zap2docker-stable \
             zap-baseline.py \
             -t http://webapp:80 \

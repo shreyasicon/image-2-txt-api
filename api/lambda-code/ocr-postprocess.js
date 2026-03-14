@@ -41,7 +41,10 @@ function loadPiiReference() {
                 if (!categories || typeof categories !== "object") return null;
                 const words = [];
                 const termToCategory = {};
+                // Skip Demographics (3_date_of_birth_and_demographics) so normal text with "age", "gender", etc. is not blocked
+                const SKIP_CATEGORIES = new Set(["3_date_of_birth_and_demographics"]);
                 for (const [catKey, cat] of Object.entries(categories)) {
+                    if (SKIP_CATEGORIES.has(catKey)) continue;
                     const displayName = CATEGORY_DISPLAY_NAMES[catKey] || catKey.replace(/\d+_/, "").replace(/_/g, " ");
                     const entities = cat.entities;
                     if (!Array.isArray(entities)) continue;
