@@ -9,9 +9,9 @@
 
 ## SonarCloud
 
-- **Org:** [shreyasicon](https://sonarcloud.io/organizations/shreyasicon/projects)  
-- **Project key:** `image-2-txt-api` (set in `webapp/scalable/sonar-project.properties`).
-- **GitHub secret:** `SONAR_KEY` = SonarCloud token (SonarCloud → My Account → Security → Generate Tokens).
+- **Project:** [shreyasicon_image-2-txt-api](https://sonarcloud.io/project/overview?id=shreyasicon_image-2-txt-api)
+- **GitHub secret:** `SONAR_TOKEN` = SonarCloud token (SonarCloud → My Account → Security → Generate Tokens).
+- **Required:** In SonarCloud go to **Project Settings → Analysis Method** and **disable "Automatic Analysis"**. The workflow uses CI analysis (GitHub Action); having both enabled causes: *"You are running CI analysis while Automatic Analysis is enabled"*.
 
 Pushes and PRs that touch `webapp/scalable/` run the CI workflow and SonarCloud analysis.
 
