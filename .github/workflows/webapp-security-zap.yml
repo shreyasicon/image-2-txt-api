@@ -1,0 +1,100 @@
+# OWASP ZAP baseline security scan for webapp
+# Builds the app, serves it in a container, runs ZAP against it, uploads report
+
+name: Webapp Security (ZAP)
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'webapp/scalable/**'
+      - '.github/workflows/webapp-security-zap.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'webapp/scalable/**'
+      - '.github/workflows/webapp-security-zap.yml'
+  workflow_dispatch:
+
+jobs:
+  zap-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: webapp/scalable/package-lock.json
+
+      - name: Install and build webapp
+        working-directory: webapp/scalable
+        run: |
+          npm ci
+          npm run build
+        env:
+          NEXT_PUBLIC_OCR_API_BASE: https://xkdvpogqt0.execute-api.us-east-1.amazonaws.com/prod
+          NEXT_PUBLIC_TRANSLATE_API_BASE: https://t3jb8c44xi.execute-api.us-east-1.amazonaws.com
+
+      - name: Prepare static export for serve
+        run: |
+          mkdir -p zap-static
+          cp -r webapp/scalable/out/. zap-static/ 2>/dev/null || cp -r webapp/scalable/out/* zap-static/
+          ls -la zap-static
+
+      - name: Start web server (same network for ZAP)
+        run: |
+          docker network create zapnet 2>/dev/null || true
+          docker run -d --name webapp \
+            --network zapnet \
+            -v ${{ github.workspace }}/zap-static:/usr/share/nginx/html:ro \
+            -p 8080:80 \
+            nginx:alpine
+          sleep 3
+          docker ps
+
+      - name: Run OWASP ZAP baseline scan
+        run: |
+          docker run --rm \
+            --network zapnet \
+            -v ${{ github.workspace }}/webapp/scalable:/zap/wrk:rw \
+            -u root \
+            owasp/zap2docker-stable \
+            zap-baseline.py \
+            -t http://webapp:80 \
+            -r zap-report.html \
+            -J zap-report.json \
+            -w zap-report.md \
+            -I
+        continue-on-error: true
+
+      - name: Stop web server
+        if: always()
+        run: docker rm -f webapp 2>/dev/null || true
+
+      - name: Upload ZAP report (HTML)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-owasp-report
+          path: webapp/scalable/zap-report.html
+          retention-days: 30
+
+      - name: Upload ZAP report (JSON)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-owasp-report-json
+          path: webapp/scalable/zap-report.json
+          retention-days: 30
+
+      - name: Upload ZAP report (Markdown)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-owasp-report-md
+          path: webapp/scalable/zap-report.md
+          retention-days: 30
