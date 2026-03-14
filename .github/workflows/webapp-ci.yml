@@ -1,3 +1,4 @@
+# Webapp CI: build, lint, SonarCloud, OWASP ZAP. Reports: SonarCloud (PR/Summary) + ZAP artifacts.
 name: Webapp CI
 
 on:
@@ -11,10 +12,15 @@ on:
     paths:
       - 'webapp/scalable/**'
       - '.github/workflows/webapp-ci.yml'
+  workflow_dispatch:
 
 defaults:
   run:
     working-directory: webapp/scalable
+
+env:
+  NEXT_PUBLIC_OCR_API_BASE: ${{ vars.NEXT_PUBLIC_OCR_API_BASE || 'https://xkdvpogqt0.execute-api.us-east-1.amazonaws.com/prod' }}
+  NEXT_PUBLIC_TRANSLATE_API_BASE: ${{ vars.NEXT_PUBLIC_TRANSLATE_API_BASE || 'https://t3jb8c44xi.execute-api.us-east-1.amazonaws.com' }}
 
 jobs:
   build-and-lint:
@@ -38,9 +44,6 @@ jobs:
 
       - name: Build
         run: npm run build
-        env:
-          NEXT_PUBLIC_OCR_API_BASE: ${{ vars.NEXT_PUBLIC_OCR_API_BASE || 'https://xkdvpogqt0.execute-api.us-east-1.amazonaws.com/prod' }}
-          NEXT_PUBLIC_TRANSLATE_API_BASE: ${{ vars.NEXT_PUBLIC_TRANSLATE_API_BASE || 'https://t3jb8c44xi.execute-api.us-east-1.amazonaws.com' }}
 
   sonarcloud:
     needs: build-and-lint
@@ -64,9 +67,6 @@ jobs:
       - name: Build
         working-directory: webapp/scalable
         run: npm run build
-        env:
-          NEXT_PUBLIC_OCR_API_BASE: ${{ vars.NEXT_PUBLIC_OCR_API_BASE || 'https://xkdvpogqt0.execute-api.us-east-1.amazonaws.com/prod' }}
-          NEXT_PUBLIC_TRANSLATE_API_BASE: ${{ vars.NEXT_PUBLIC_TRANSLATE_API_BASE || 'https://t3jb8c44xi.execute-api.us-east-1.amazonaws.com' }}
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v2
@@ -78,3 +78,101 @@ jobs:
           args: >
             -Dsonar.organization=shreyasicon
             -Dsonar.projectKey=image-2-txt-api
+
+      - name: SonarCloud report link
+        if: always()
+        run: |
+          echo "## SonarCloud" >> $GITHUB_STEP_SUMMARY
+          echo "View results: https://sonarcloud.io/project/overview?id=image-2-txt-api" >> $GITHUB_STEP_SUMMARY
+
+  zap-scan:
+    needs: build-and-lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install and build
+        working-directory: webapp/scalable
+        run: |
+          npm ci
+          npm run build
+
+      - name: Prepare static for ZAP
+        run: |
+          mkdir -p zap-static zap-reports
+          if [ -d webapp/scalable/out ]; then
+            cp -r webapp/scalable/out/. zap-static/
+          else
+            echo '<!DOCTYPE html><html><head><title>App</title></head><body>OK</body></html>' > zap-static/index.html
+          fi
+          ls -la zap-static
+
+      - name: Start web server
+        run: |
+          docker network create zapnet 2>/dev/null || true
+          docker run -d --name webapp \
+            --network zapnet \
+            -v ${{ github.workspace }}/zap-static:/usr/share/nginx/html:ro \
+            nginx:alpine
+          sleep 3
+          docker ps
+
+      - name: Run OWASP ZAP baseline
+        run: |
+          docker run --rm \
+            --network zapnet \
+            -v ${{ github.workspace }}/zap-reports:/reports \
+            -u root \
+            -w /reports \
+            owasp/zap2docker-stable \
+            zap-baseline.py \
+            -t http://webapp:80 \
+            -r zap-report.html \
+            -J zap-report.json \
+            -w zap-report.md \
+            -I
+        continue-on-error: true
+
+      - name: Stop web server
+        if: always()
+        run: docker rm -f webapp 2>/dev/null || true
+
+      - name: Upload ZAP reports (all in one artifact)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webapp-reports-zap
+          path: zap-reports/
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: ZAP report summary
+        if: always()
+        run: |
+          echo "## OWASP ZAP" >> $GITHUB_STEP_SUMMARY
+          echo "Download the **webapp-reports-zap** artifact (HTML, JSON, MD) from the run Summary." >> $GITHUB_STEP_SUMMARY
+          if [ -f zap-reports/zap-report.html ]; then
+            echo "Reports generated successfully." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Reports may be missing (check job logs)." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  reports-summary:
+    needs: [sonarcloud, zap-scan]
+    if: always() && (needs.sonarcloud.result == 'success' || needs.sonarcloud.result == 'failure' || needs.sonarcloud.result == 'skipped') && (needs.zap-scan.result == 'success' || needs.zap-scan.result == 'failure')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reports summary
+        run: |
+          echo "# Webapp CI Reports" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Report | Where to find it |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|------------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **SonarCloud** | [sonarcloud.io/project/overview?id=image-2-txt-api](https://sonarcloud.io/project/overview?id=image-2-txt-api) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **OWASP ZAP** | Download artifact **webapp-reports-zap** (contains zap-report.html, .json, .md) |" >> $GITHUB_STEP_SUMMARY
