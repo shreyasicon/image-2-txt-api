@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "aws-sdk": "^2.1693.0"
+  }
+}

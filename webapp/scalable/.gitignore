@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Next.js build and cache
+.next/
+out/
+
+# Deploy artifacts
+.last_deploy_hash
+
+# Uploads and temp
+*.tmp
+*.temp
+
+# Environment (never commit)
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS and IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test coverage (if added later)
+coverage/
+.nyc_output/
