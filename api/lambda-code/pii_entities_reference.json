@@ -1,0 +1,678 @@
+{
+  "metadata": {
+    "title": "PII Entity Detection Reference for Image-to-Text Services",
+    "version": "1.0",
+    "description": "Comprehensive list of personal/sensitive data fields detectable from document images via OCR + NER",
+    "use_case": "Image-to-text PII extraction and redaction pipelines",
+    "recommended_models": {
+      "ocr": [
+        "microsoft/trocr-large-printed",
+        "microsoft/trocr-large-handwritten",
+        "PaddleOCR (PaddlePaddle)",
+        "tesseract (pytesseract)",
+        "EasyOCR",
+        "google/pix2struct-base"
+      ],
+      "ner_pii_detection": [
+        "dslim/bert-base-NER",
+        "Jean-Baptiste/camembert-ner",
+        "lakshyakh93/deberta_finetuned_pii",
+        "iiiorg/piiranha-v1-detect-personal-information",
+        "bigcode/starpii",
+        "presidio-analyzer (Microsoft)",
+        "StanfordAIMI/stanford-deidentifier-base",
+        "numind/NuNER-v2.0"
+      ],
+      "document_understanding": [
+        "microsoft/layoutlmv3-base",
+        "microsoft/dit-base-finetuned-rvlcdip",
+        "impira/layoutlm-document-qa",
+        "google/pix2struct-docvqa-base",
+        "microsoft/Florence-2-large"
+      ],
+      "huggingface_datasets": [
+        "ai4privacy/pii-masking-300k",
+        "ai4privacy/pii-masking-65k",
+        "gretelai/synthetic_pii_finance_multilingual",
+        "Isotonic/pii-masking-200k"
+      ]
+    }
+  },
+
+  "pii_categories": {
+
+    "1_identity_core": {
+      "description": "Primary identity information",
+      "entities": [
+        {
+          "field": "FULL_NAME",
+          "aliases": ["name", "person_name", "legal_name"],
+          "regex_hint": "[A-Z][a-z]+ [A-Z][a-z]+",
+          "examples": ["John Michael Smith", "María García López"],
+          "found_in": ["ID cards", "passports", "letters", "forms", "resumes"]
+        },
+        {
+          "field": "FIRST_NAME",
+          "aliases": ["given_name", "forename"],
+          "examples": ["John", "María"]
+        },
+        {
+          "field": "MIDDLE_NAME",
+          "aliases": ["middle_initial"],
+          "examples": ["Michael", "A."]
+        },
+        {
+          "field": "LAST_NAME",
+          "aliases": ["surname", "family_name"],
+          "examples": ["Smith", "García"]
+        },
+        {
+          "field": "MAIDEN_NAME",
+          "aliases": ["birth_name", "née"],
+          "examples": ["née Johnson"]
+        },
+        {
+          "field": "NICKNAME",
+          "aliases": ["alias", "aka", "also_known_as"],
+          "examples": ["Johnny", "a.k.a. 'The Rock'"]
+        },
+        {
+          "field": "PREFIX",
+          "aliases": ["title", "honorific"],
+          "examples": ["Mr.", "Mrs.", "Dr.", "Prof.", "Rev."]
+        },
+        {
+          "field": "SUFFIX",
+          "aliases": ["generational"],
+          "examples": ["Jr.", "Sr.", "III", "Esq."]
+        }
+      ]
+    },
+
+    "2_government_ids": {
+      "description": "Government-issued identification numbers",
+      "entities": [
+        {
+          "field": "SSN",
+          "aliases": ["social_security_number", "social_security"],
+          "regex_hint": "\\d{3}-\\d{2}-\\d{4}",
+          "examples": ["123-45-6789"],
+          "country": "US",
+          "found_in": ["tax forms", "W-2", "employment docs"]
+        },
+        {
+          "field": "NATIONAL_ID",
+          "aliases": ["national_identity_number", "citizen_id"],
+          "examples": ["Aadhaar: 1234 5678 9012", "UK NIN: AB123456C"],
+          "country": "varies"
+        },
+        {
+          "field": "PASSPORT_NUMBER",
+          "aliases": ["passport_no"],
+          "regex_hint": "[A-Z0-9]{6,9}",
+          "examples": ["AB1234567"],
+          "found_in": ["passports", "visa applications"]
+        },
+        {
+          "field": "DRIVERS_LICENSE",
+          "aliases": ["driving_license", "DL_number"],
+          "examples": ["D123-4567-8901"],
+          "found_in": ["driver licenses", "ID cards"]
+        },
+        {
+          "field": "TAX_ID",
+          "aliases": ["TIN", "tax_identification_number", "EIN", "ITIN", "PAN"],
+          "regex_hint": "\\d{2}-\\d{7}",
+          "examples": ["US EIN: 12-3456789", "India PAN: ABCDE1234F"],
+          "found_in": ["tax returns", "invoices", "business docs"]
+        },
+        {
+          "field": "VOTER_ID",
+          "aliases": ["voter_registration", "electoral_id"],
+          "examples": ["VOT1234567"]
+        },
+        {
+          "field": "MILITARY_ID",
+          "aliases": ["service_number", "DoD_id"],
+          "examples": ["US DoD: 1234567890"]
+        },
+        {
+          "field": "IMMIGRATION_NUMBER",
+          "aliases": ["alien_number", "visa_number", "green_card_number", "A_number"],
+          "examples": ["A# 012-345-678"]
+        }
+      ]
+    },
+
+    "3_date_of_birth_and_demographics": {
+      "description": "Birth information and demographic data",
+      "entities": [
+        {
+          "field": "DATE_OF_BIRTH",
+          "aliases": ["DOB", "birth_date", "birthday"],
+          "regex_hint": "\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}",
+          "examples": ["01/15/1990", "15-Jan-1990"],
+          "found_in": ["ID cards", "medical records", "forms"]
+        },
+        {
+          "field": "PLACE_OF_BIRTH",
+          "aliases": ["birth_city", "birth_country"],
+          "examples": ["Dublin, Ireland"]
+        },
+        {
+          "field": "AGE",
+          "aliases": ["years_old"],
+          "examples": ["35", "Age: 35"]
+        },
+        {
+          "field": "GENDER",
+          "aliases": ["sex"],
+          "examples": ["Male", "Female", "M", "F", "Non-binary"]
+        },
+        {
+          "field": "NATIONALITY",
+          "aliases": ["citizenship"],
+          "examples": ["Irish", "American"]
+        },
+        {
+          "field": "ETHNICITY",
+          "aliases": ["race"],
+          "examples": ["Caucasian", "Hispanic"]
+        },
+        {
+          "field": "MARITAL_STATUS",
+          "aliases": ["civil_status"],
+          "examples": ["Single", "Married", "Divorced"]
+        },
+        {
+          "field": "RELIGION",
+          "aliases": ["faith", "religious_affiliation"],
+          "examples": ["Catholic", "Muslim"]
+        }
+      ]
+    },
+
+    "4_contact_information": {
+      "description": "All forms of contact details",
+      "entities": [
+        {
+          "field": "EMAIL",
+          "aliases": ["email_address", "e-mail"],
+          "regex_hint": "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}",
+          "examples": ["john.smith@email.com"]
+        },
+        {
+          "field": "PHONE_NUMBER",
+          "aliases": ["telephone", "mobile", "cell", "phone"],
+          "regex_hint": "[+]?\\d{1,3}[-.\\s]?\\(?\\d{1,4}\\)?[-.\\s]?\\d{1,4}[-.\\s]?\\d{1,9}",
+          "examples": ["+1 (555) 123-4567", "+353 87 123 4567"]
+        },
+        {
+          "field": "FAX_NUMBER",
+          "aliases": ["fax"],
+          "examples": ["+1 (555) 123-4568"]
+        },
+        {
+          "field": "ADDRESS",
+          "aliases": ["street_address", "mailing_address", "home_address", "residential_address"],
+          "examples": ["123 Main Street, Apt 4B, Dublin, D01 AB12, Ireland"]
+        },
+        {
+          "field": "ADDRESS_STREET",
+          "aliases": ["street_line"],
+          "examples": ["123 Main Street, Apt 4B"]
+        },
+        {
+          "field": "ADDRESS_CITY",
+          "aliases": ["city", "town"],
+          "examples": ["Dublin"]
+        },
+        {
+          "field": "ADDRESS_STATE",
+          "aliases": ["state", "province", "county", "region"],
+          "examples": ["California", "Leinster"]
+        },
+        {
+          "field": "ADDRESS_ZIP",
+          "aliases": ["postal_code", "postcode", "eircode", "zip_code"],
+          "regex_hint": "\\d{5}(-\\d{4})?|[A-Z]\\d{2}\\s?[A-Z0-9]{4}",
+          "examples": ["90210", "D01 AB12", "SW1A 1AA"]
+        },
+        {
+          "field": "ADDRESS_COUNTRY",
+          "aliases": ["country"],
+          "examples": ["Ireland", "United States"]
+        },
+        {
+          "field": "PO_BOX",
+          "aliases": ["post_office_box"],
+          "examples": ["P.O. Box 1234"]
+        }
+      ]
+    },
+
+    "5_financial_information": {
+      "description": "Banking, payment, and financial details",
+      "entities": [
+        {
+          "field": "CREDIT_CARD_NUMBER",
+          "aliases": ["card_number", "CC_number", "debit_card_number"],
+          "regex_hint": "\\d{4}[- ]?\\d{4}[- ]?\\d{4}[- ]?\\d{4}",
+          "examples": ["4111-1111-1111-1111"],
+          "found_in": ["receipts", "statements", "forms"]
+        },
+        {
+          "field": "CREDIT_CARD_EXPIRY",
+          "aliases": ["card_expiration", "exp_date"],
+          "regex_hint": "\\d{2}/\\d{2,4}",
+          "examples": ["12/25", "12/2025"]
+        },
+        {
+          "field": "CVV",
+          "aliases": ["CVC", "security_code", "card_verification"],
+          "regex_hint": "\\d{3,4}",
+          "examples": ["123", "1234"]
+        },
+        {
+          "field": "BANK_ACCOUNT_NUMBER",
+          "aliases": ["account_number", "checking_account", "savings_account"],
+          "examples": ["12345678"]
+        },
+        {
+          "field": "ROUTING_NUMBER",
+          "aliases": ["ABA_number", "sort_code"],
+          "regex_hint": "\\d{9}",
+          "examples": ["021000021"]
+        },
+        {
+          "field": "IBAN",
+          "aliases": ["international_bank_account"],
+          "regex_hint": "[A-Z]{2}\\d{2}[A-Z0-9]{4,30}",
+          "examples": ["IE29 AIBK 9311 5212 3456 78"]
+        },
+        {
+          "field": "SWIFT_BIC",
+          "aliases": ["BIC_code", "SWIFT_code"],
+          "regex_hint": "[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?",
+          "examples": ["AABORUMM"]
+        },
+        {
+          "field": "SALARY",
+          "aliases": ["income", "wages", "compensation", "pay"],
+          "examples": ["$85,000/year", "€4,500/month"]
+        },
+        {
+          "field": "LOAN_NUMBER",
+          "aliases": ["mortgage_number", "loan_account"],
+          "examples": ["LN-2024-001234"]
+        },
+        {
+          "field": "INSURANCE_POLICY_NUMBER",
+          "aliases": ["policy_number", "policy_id"],
+          "examples": ["POL-2024-56789"]
+        }
+      ]
+    },
+
+    "6_medical_health": {
+      "description": "Health and medical information (HIPAA-relevant)",
+      "entities": [
+        {
+          "field": "MEDICAL_RECORD_NUMBER",
+          "aliases": ["MRN", "patient_id", "chart_number"],
+          "examples": ["MRN: 12345678"]
+        },
+        {
+          "field": "HEALTH_INSURANCE_ID",
+          "aliases": ["insurance_member_id", "member_number", "subscriber_id"],
+          "examples": ["XYZ123456789"]
+        },
+        {
+          "field": "DIAGNOSIS",
+          "aliases": ["medical_condition", "ICD_code"],
+          "examples": ["Type 2 Diabetes (E11.9)"]
+        },
+        {
+          "field": "MEDICATION",
+          "aliases": ["prescription", "drug_name"],
+          "examples": ["Metformin 500mg"]
+        },
+        {
+          "field": "BLOOD_TYPE",
+          "aliases": ["blood_group"],
+          "examples": ["O+", "AB-"]
+        },
+        {
+          "field": "ALLERGIES",
+          "aliases": ["drug_allergy", "food_allergy"],
+          "examples": ["Penicillin", "Peanuts"]
+        },
+        {
+          "field": "DISABILITY_STATUS",
+          "aliases": ["disability"],
+          "examples": ["Visual impairment"]
+        },
+        {
+          "field": "HEALTHCARE_PROVIDER",
+          "aliases": ["doctor_name", "physician", "NPI"],
+          "examples": ["Dr. Jane Doe, NPI: 1234567890"]
+        },
+        {
+          "field": "MEDICAL_PROCEDURE",
+          "aliases": ["surgery", "treatment", "CPT_code"],
+          "examples": ["Knee replacement (CPT: 27447)"]
+        }
+      ]
+    },
+
+    "7_employment_education": {
+      "description": "Work and education history",
+      "entities": [
+        {
+          "field": "EMPLOYER",
+          "aliases": ["company_name", "organization", "workplace"],
+          "examples": ["Acme Corporation"]
+        },
+        {
+          "field": "JOB_TITLE",
+          "aliases": ["position", "role", "designation"],
+          "examples": ["Senior Software Engineer"]
+        },
+        {
+          "field": "EMPLOYEE_ID",
+          "aliases": ["staff_number", "badge_number", "worker_id"],
+          "examples": ["EMP-2024-001"]
+        },
+        {
+          "field": "WORK_ADDRESS",
+          "aliases": ["office_address", "business_address"],
+          "examples": ["456 Corporate Blvd, Suite 200"]
+        },
+        {
+          "field": "WORK_EMAIL",
+          "aliases": ["corporate_email", "business_email"],
+          "examples": ["jsmith@acmecorp.com"]
+        },
+        {
+          "field": "WORK_PHONE",
+          "aliases": ["office_phone", "extension"],
+          "examples": ["+1 (555) 987-6543 ext. 100"]
+        },
+        {
+          "field": "SCHOOL_NAME",
+          "aliases": ["university", "college", "institution"],
+          "examples": ["Trinity College Dublin"]
+        },
+        {
+          "field": "STUDENT_ID",
+          "aliases": ["student_number", "enrollment_id"],
+          "examples": ["STU-20240001"]
+        },
+        {
+          "field": "DEGREE",
+          "aliases": ["qualification", "diploma", "certificate"],
+          "examples": ["B.Sc. Computer Science"]
+        },
+        {
+          "field": "GPA",
+          "aliases": ["grade_point_average", "marks"],
+          "examples": ["3.8/4.0", "First Class Honours"]
+        }
+      ]
+    },
+
+    "8_digital_identifiers": {
+      "description": "Online accounts, IPs, and digital footprint",
+      "entities": [
+        {
+          "field": "USERNAME",
+          "aliases": ["user_id", "login", "handle", "screen_name"],
+          "examples": ["@johnsmith", "jsmith_2024"]
+        },
+        {
+          "field": "PASSWORD",
+          "aliases": ["passcode", "pin", "secret"],
+          "examples": ["P@ssw0rd!", "****"]
+        },
+        {
+          "field": "IP_ADDRESS",
+          "aliases": ["IPv4", "IPv6", "IP"],
+          "regex_hint": "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}",
+          "examples": ["192.168.1.1", "2001:0db8:85a3::8a2e:0370:7334"]
+        },
+        {
+          "field": "MAC_ADDRESS",
+          "aliases": ["hardware_address"],
+          "regex_hint": "([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}",
+          "examples": ["00:1A:2B:3C:4D:5E"]
+        },
+        {
+          "field": "URL_PERSONAL",
+          "aliases": ["website", "personal_url", "portfolio_url"],
+          "examples": ["https://johnsmith.dev"]
+        },
+        {
+          "field": "SOCIAL_MEDIA_PROFILE",
+          "aliases": ["linkedin", "facebook", "twitter_handle", "instagram"],
+          "examples": ["linkedin.com/in/johnsmith"]
+        },
+        {
+          "field": "DEVICE_ID",
+          "aliases": ["IMEI", "serial_number", "UUID"],
+          "examples": ["IMEI: 353456789012345"]
+        },
+        {
+          "field": "COOKIE_ID",
+          "aliases": ["tracking_id", "session_id"],
+          "examples": ["sess_abc123def456"]
+        }
+      ]
+    },
+
+    "9_vehicle_property": {
+      "description": "Vehicle and property identifiers",
+      "entities": [
+        {
+          "field": "LICENSE_PLATE",
+          "aliases": ["registration_plate", "vehicle_registration", "number_plate"],
+          "examples": ["ABC 1234", "12-D-12345"]
+        },
+        {
+          "field": "VIN",
+          "aliases": ["vehicle_identification_number", "chassis_number"],
+          "regex_hint": "[A-HJ-NPR-Z0-9]{17}",
+          "examples": ["1HGBH41JXMN109186"]
+        },
+        {
+          "field": "PROPERTY_ID",
+          "aliases": ["parcel_number", "deed_number", "folio_number"],
+          "examples": ["APN: 1234-567-890"]
+        }
+      ]
+    },
+
+    "10_biometric_physical": {
+      "description": "Biometric and physical descriptors",
+      "entities": [
+        {
+          "field": "FINGERPRINT_ID",
+          "aliases": ["biometric_id"],
+          "examples": ["Fingerprint template hash"]
+        },
+        {
+          "field": "FACE_ENCODING",
+          "aliases": ["facial_recognition_data"],
+          "examples": ["128-d face embedding vector"]
+        },
+        {
+          "field": "SIGNATURE",
+          "aliases": ["handwritten_signature"],
+          "examples": ["[detected signature region]"]
+        },
+        {
+          "field": "HEIGHT",
+          "aliases": ["stature"],
+          "examples": ["5'10\"", "178 cm"]
+        },
+        {
+          "field": "WEIGHT",
+          "aliases": ["body_weight"],
+          "examples": ["175 lbs", "80 kg"]
+        },
+        {
+          "field": "EYE_COLOR",
+          "aliases": ["iris_color"],
+          "examples": ["Brown", "Blue"]
+        },
+        {
+          "field": "HAIR_COLOR",
+          "examples": ["Black", "Blonde"]
+        },
+        {
+          "field": "DISTINGUISHING_MARKS",
+          "aliases": ["scars", "tattoos", "birthmarks"],
+          "examples": ["Tattoo on left arm", "Scar above right eyebrow"]
+        }
+      ]
+    },
+
+    "11_legal_criminal": {
+      "description": "Legal case and criminal record data",
+      "entities": [
+        {
+          "field": "CASE_NUMBER",
+          "aliases": ["court_case_id", "docket_number"],
+          "examples": ["Case No. 2024-CV-001234"]
+        },
+        {
+          "field": "CRIMINAL_RECORD",
+          "aliases": ["arrest_record", "conviction"],
+          "examples": ["Felony conviction 2018"]
+        },
+        {
+          "field": "COURT_NAME",
+          "aliases": ["jurisdiction"],
+          "examples": ["Dublin Circuit Court"]
+        },
+        {
+          "field": "ATTORNEY_NAME",
+          "aliases": ["lawyer", "solicitor", "barrister"],
+          "examples": ["Solicitor: Mary O'Brien"]
+        },
+        {
+          "field": "INMATE_NUMBER",
+          "aliases": ["prisoner_id", "booking_number"],
+          "examples": ["BOP: 12345-678"]
+        }
+      ]
+    },
+
+    "12_dates_and_events": {
+      "description": "Dates tied to personal events",
+      "entities": [
+        {
+          "field": "DATE_OF_DEATH",
+          "aliases": ["death_date", "DOD"],
+          "examples": ["03/15/2024"]
+        },
+        {
+          "field": "DATE_OF_MARRIAGE",
+          "aliases": ["wedding_date"],
+          "examples": ["June 15, 2020"]
+        },
+        {
+          "field": "DATE_OF_HIRE",
+          "aliases": ["start_date", "employment_date"],
+          "examples": ["01/01/2023"]
+        },
+        {
+          "field": "DATE_OF_TERMINATION",
+          "aliases": ["end_date", "last_day"],
+          "examples": ["12/31/2024"]
+        },
+        {
+          "field": "DATE_OF_ADMISSION",
+          "aliases": ["hospital_admission", "enrollment_date"],
+          "examples": ["2024-03-01"]
+        },
+        {
+          "field": "DATE_OF_DISCHARGE",
+          "aliases": ["release_date"],
+          "examples": ["2024-03-05"]
+        }
+      ]
+    },
+
+    "13_family_relationships": {
+      "description": "Family and relationship identifiers",
+      "entities": [
+        {
+          "field": "SPOUSE_NAME",
+          "aliases": ["partner_name", "husband", "wife"],
+          "examples": ["Jane Smith"]
+        },
+        {
+          "field": "PARENT_NAME",
+          "aliases": ["mother_name", "father_name", "guardian"],
+          "examples": ["Robert Smith (Father)"]
+        },
+        {
+          "field": "CHILD_NAME",
+          "aliases": ["dependent_name", "minor_name"],
+          "examples": ["Emily Smith"]
+        },
+        {
+          "field": "EMERGENCY_CONTACT",
+          "aliases": ["next_of_kin", "ICE_contact"],
+          "examples": ["Jane Smith - (555) 123-4567"]
+        },
+        {
+          "field": "BENEFICIARY",
+          "aliases": ["beneficiary_name"],
+          "examples": ["Jane Smith (Spouse)"]
+        }
+      ]
+    }
+  },
+
+  "document_types_and_expected_pii": {
+    "passport": ["FULL_NAME", "DATE_OF_BIRTH", "PASSPORT_NUMBER", "NATIONALITY", "GENDER", "PLACE_OF_BIRTH", "PHOTO", "SIGNATURE", "EXPIRY_DATE"],
+    "drivers_license": ["FULL_NAME", "DATE_OF_BIRTH", "DRIVERS_LICENSE", "ADDRESS", "PHOTO", "HEIGHT", "WEIGHT", "EYE_COLOR", "GENDER"],
+    "national_id_card": ["FULL_NAME", "DATE_OF_BIRTH", "NATIONAL_ID", "PHOTO", "ADDRESS", "GENDER"],
+    "birth_certificate": ["FULL_NAME", "DATE_OF_BIRTH", "PLACE_OF_BIRTH", "PARENT_NAME", "GENDER"],
+    "tax_return": ["FULL_NAME", "SSN", "TAX_ID", "ADDRESS", "SALARY", "SPOUSE_NAME", "EMPLOYER"],
+    "bank_statement": ["FULL_NAME", "ADDRESS", "BANK_ACCOUNT_NUMBER", "ROUTING_NUMBER", "IBAN"],
+    "medical_record": ["FULL_NAME", "DATE_OF_BIRTH", "MEDICAL_RECORD_NUMBER", "DIAGNOSIS", "MEDICATION", "HEALTHCARE_PROVIDER", "HEALTH_INSURANCE_ID"],
+    "resume_cv": ["FULL_NAME", "EMAIL", "PHONE_NUMBER", "ADDRESS", "EMPLOYER", "JOB_TITLE", "SCHOOL_NAME", "DEGREE", "LINKEDIN"],
+    "invoice": ["FULL_NAME", "ADDRESS", "EMAIL", "PHONE_NUMBER", "TAX_ID", "BANK_ACCOUNT_NUMBER", "IBAN"],
+    "insurance_card": ["FULL_NAME", "DATE_OF_BIRTH", "HEALTH_INSURANCE_ID", "EMPLOYER"],
+    "utility_bill": ["FULL_NAME", "ADDRESS", "BANK_ACCOUNT_NUMBER"],
+    "credit_card": ["FULL_NAME", "CREDIT_CARD_NUMBER", "CREDIT_CARD_EXPIRY", "CVV"],
+    "court_document": ["FULL_NAME", "CASE_NUMBER", "COURT_NAME", "ATTORNEY_NAME", "DATE_OF_BIRTH", "ADDRESS"],
+    "employment_letter": ["FULL_NAME", "EMPLOYER", "JOB_TITLE", "SALARY", "DATE_OF_HIRE", "EMPLOYEE_ID", "WORK_ADDRESS"],
+    "vehicle_registration": ["FULL_NAME", "ADDRESS", "LICENSE_PLATE", "VIN"],
+    "prescription": ["FULL_NAME", "DATE_OF_BIRTH", "MEDICATION", "HEALTHCARE_PROVIDER", "MEDICAL_RECORD_NUMBER"]
+  },
+
+  "regex_patterns": {
+    "SSN": "\\b\\d{3}-\\d{2}-\\d{4}\\b",
+    "EMAIL": "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b",
+    "PHONE_US": "\\b(\\+1[-.\\s]?)?\\(?\\d{3}\\)?[-.\\s]?\\d{3}[-.\\s]?\\d{4}\\b",
+    "PHONE_INTL": "\\b\\+?\\d{1,3}[-.\\s]?\\(?\\d{1,4}\\)?[-.\\s]?\\d{1,4}[-.\\s]?\\d{1,9}\\b",
+    "CREDIT_CARD": "\\b(?:\\d{4}[- ]?){3}\\d{4}\\b",
+    "DATE": "\\b\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}\\b",
+    "IP_V4": "\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b",
+    "IBAN": "\\b[A-Z]{2}\\d{2}\\s?[A-Z0-9]{4}\\s?\\d{4}\\s?\\d{4}\\s?\\d{4}\\s?\\d{0,2}\\b",
+    "PASSPORT": "\\b[A-Z]{1,2}\\d{6,9}\\b",
+    "VIN": "\\b[A-HJ-NPR-Z0-9]{17}\\b",
+    "ZIP_US": "\\b\\d{5}(-\\d{4})?\\b",
+    "POSTCODE_UK": "\\b[A-Z]{1,2}\\d[A-Z\\d]?\\s?\\d[A-Z]{2}\\b",
+    "EIRCODE_IE": "\\b[A-Z]\\d{2}\\s?[A-Z0-9]{4}\\b",
+    "PAN_INDIA": "\\b[A-Z]{5}\\d{4}[A-Z]\\b",
+    "AADHAAR_INDIA": "\\b\\d{4}\\s?\\d{4}\\s?\\d{4}\\b",
+    "MAC_ADDRESS": "\\b([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}\\b"
+  },
+
+  "total_entity_count": 95,
+  "total_categories": 13
+}

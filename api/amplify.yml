@@ -1,0 +1,19 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - node scripts/replace-api-url.js
+    build:
+      commands: []
+  artifacts:
+    baseDirectory: .
+    files:
+      - "**/*"
+  cache:
+    paths: []
+  customHeaders:
+    - pattern: "**/*"
+      headers:
+        - key: "Cache-Control"
+          value: "no-cache, no-store, must-revalidate"

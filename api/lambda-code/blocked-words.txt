@@ -1,0 +1,72 @@
+
+@
+email
+e-mail
+email address
+credit card
+creditcard
+card holder
+cardholder
+card number
+visa
+mastercard
+amex
+discover
+cvv
+cvc
+security code
+expires
+expiry
+expiration date
+send receipt
+billing address
+billing
+account number
+routing number
+iban
+swift
+ssn
+social security
+social security number
+tax id
+tax identification
+ein
+tin
+address
+street address
+street
+bank account
+checking account
+savings account
+debit
+debit card
+credit
+drivers license
+driver license
+license number
+passport
+passport number
+state id
+date of birth
+birth date
+birthday
+first name
+last name
+maiden name
+phone
+phone number
+telephone
+mobile
+mobile number
+password
+secret
+token
+reset token
+cookie
+ip address
+ip
+mac address
+employer id
+employer id number
+auth id
+passport number

@@ -1,0 +1,21 @@
+email
+e-mail
+credit card
+card holder
+cardholder
+visa
+mastercard
+amex
+cvv
+cvc
+security code
+ssn
+social security
+account number
+routing number
+iban
+billing address
+card number
+expires
+send receipt
+@
