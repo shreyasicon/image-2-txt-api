@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
+import Image from 'next/image';
 import { GlassCard } from '@/components/glass-card';
 import { Upload, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -10,6 +11,41 @@ interface UploadCardProps {
   isLoading?: boolean;
   selectedFile?: File | null;
   onClear?: () => void;
+}
+
+function SelectedFilePreview({ selectedFile, onClear }: { selectedFile: File; onClear?: () => void }) {
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  useEffect(() => {
+    const url = URL.createObjectURL(selectedFile);
+    setObjectUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [selectedFile]);
+  return (
+    <GlassCard className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="font-bold text-lg">Selected Image</h3>
+        <button
+          onClick={onClear}
+          className="p-2 hover:bg-muted/50 rounded-lg transition-colors"
+          type="button"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+      <div className="relative w-full h-64 rounded-lg overflow-hidden border border-border/50">
+        {objectUrl && (
+          <Image
+            src={objectUrl}
+            alt="Selected file preview"
+            fill
+            className="object-cover"
+            unoptimized
+          />
+        )}
+      </div>
+      <p className="text-sm text-muted-foreground">{selectedFile.name}</p>
+    </GlassCard>
+  );
 }
 
 export function UploadCard({ onFileSelect, isLoading = false, selectedFile, onClear }: UploadCardProps) {
@@ -47,25 +83,10 @@ export function UploadCard({ onFileSelect, isLoading = false, selectedFile, onCl
 
   if (selectedFile) {
     return (
-      <GlassCard className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-bold text-lg">Selected Image</h3>
-          <button
-            onClick={onClear}
-            className="p-2 hover:bg-muted/50 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        <div className="relative w-full h-64 rounded-lg overflow-hidden border border-border/50">
-          <img
-            src={URL.createObjectURL(selectedFile)}
-            alt="Selected"
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <p className="text-sm text-muted-foreground">{selectedFile.name}</p>
-      </GlassCard>
+      <SelectedFilePreview
+        selectedFile={selectedFile}
+        onClear={onClear}
+      />
     );
   }
 

@@ -44,6 +44,8 @@ export default function FindImagesPage() {
   useEffect(() => {
     if (!isUnsplashConfigured) return;
     loadPhotos(1, false, false);
+    // Intentionally run only when config is available; loadPhotos is stable for initial load
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isUnsplashConfigured]);
 
   const handleSearch = (e: React.FormEvent) => {

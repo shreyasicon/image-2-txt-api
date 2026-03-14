@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { GlassCard } from '@/components/glass-card';
 import { GlowButton } from '@/components/glow-button';
-import { Image, Zap, Tag, Clock } from 'lucide-react';
+import { Image as ImageIcon, Zap, Tag, Clock } from 'lucide-react';
 
 interface RecentItem {
   id: string;
@@ -33,7 +33,7 @@ export default function DashboardPage() {
     {
       label: 'Total Items',
       value: recentItems.length,
-      icon: Image,
+      icon: ImageIcon,
       color: 'text-primary',
     },
     {
@@ -91,7 +91,7 @@ export default function DashboardPage() {
               <GlassCard interactive className="cursor-pointer">
                 <div className="space-y-3">
                   <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center">
-                    <Image className="w-6 h-6 text-primary" />
+                    <ImageIcon className="w-6 h-6 text-primary" aria-hidden />
                   </div>
                   <div>
                     <h3 className="font-bold text-lg">Upload Image</h3>
@@ -107,7 +107,7 @@ export default function DashboardPage() {
               <GlassCard interactive className="cursor-pointer">
                 <div className="space-y-3">
                   <div className="w-12 h-12 rounded-lg bg-secondary/20 flex items-center justify-center">
-                    <Zap className="w-6 h-6 text-secondary" />
+                    <Zap className="w-6 h-6 text-secondary" aria-hidden />
                   </div>
                   <div>
                     <h3 className="font-bold text-lg">View Vault</h3>
@@ -134,7 +134,7 @@ export default function DashboardPage() {
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                        <Clock className="w-5 h-5 text-primary" />
+                        <Clock className="w-5 h-5 text-primary" aria-hidden />
                       </div>
                       <div>
                         <p className="font-medium">{item.title}</p>
@@ -155,7 +155,7 @@ export default function DashboardPage() {
         {recentItems.length === 0 && (
           <GlassCard className="text-center space-y-4 border-primary/30 py-12">
             <div className="w-16 h-16 rounded-lg bg-primary/20 flex items-center justify-center mx-auto">
-              <Image className="w-8 h-8 text-primary" />
+              <ImageIcon className="w-8 h-8 text-primary" aria-hidden />
             </div>
             <div>
               <h3 className="text-xl font-bold mb-2">No content yet</h3>
