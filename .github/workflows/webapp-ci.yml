@@ -3,12 +3,12 @@ name: Webapp CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
     paths:
       - 'webapp/scalable/**'
       - '.github/workflows/webapp-ci.yml'
   pull_request:
-    branches: [main, master]
+    branches: [main]
     paths:
       - 'webapp/scalable/**'
       - '.github/workflows/webapp-ci.yml'
@@ -45,7 +45,7 @@ jobs:
   sonarcloud:
     needs: build-and-lint
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -74,13 +74,8 @@ jobs:
           projectBaseDir: webapp/scalable
           args: >
             -Dsonar.organization=shreyasicon
-            -Dsonar.projectKey=image-2-txt-api
-
-      - name: SonarCloud report link
-        if: always()
-        run: |
-          echo "## SonarCloud" >> $GITHUB_STEP_SUMMARY
-          echo "View results: https://sonarcloud.io/project/overview?id=image-2-txt-api" >> $GITHUB_STEP_SUMMARY
+            -Dsonar.projectKey=shreyasicon_image-2-txt-api
+            -Dsonar.branch.name=main
 
   zap-scan:
     needs: build-and-lint
@@ -149,27 +144,3 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
-      - name: ZAP report summary
-        if: always()
-        run: |
-          echo "## OWASP ZAP" >> $GITHUB_STEP_SUMMARY
-          echo "Download the **webapp-reports-zap** artifact (HTML, JSON, MD) from the run Summary." >> $GITHUB_STEP_SUMMARY
-          if [ -f zap-reports/zap-report.html ]; then
-            echo "Reports generated successfully." >> $GITHUB_STEP_SUMMARY
-          else
-            echo "Reports may be missing (check job logs)." >> $GITHUB_STEP_SUMMARY
-          fi
-
-  reports-summary:
-    needs: [sonarcloud, zap-scan]
-    if: always() && (needs.sonarcloud.result == 'success' || needs.sonarcloud.result == 'failure' || needs.sonarcloud.result == 'skipped') && (needs.zap-scan.result == 'success' || needs.zap-scan.result == 'failure')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Reports summary
-        run: |
-          echo "# Webapp CI Reports" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Report | Where to find it |" >> $GITHUB_STEP_SUMMARY
-          echo "|--------|------------------|" >> $GITHUB_STEP_SUMMARY
-          echo "| **SonarCloud** | [sonarcloud.io/project/overview?id=image-2-txt-api](https://sonarcloud.io/project/overview?id=image-2-txt-api) |" >> $GITHUB_STEP_SUMMARY
-          echo "| **OWASP ZAP** | Download artifact **webapp-reports-zap** (contains zap-report.html, .json, .md) |" >> $GITHUB_STEP_SUMMARY
