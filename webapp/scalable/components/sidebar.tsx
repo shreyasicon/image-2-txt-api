@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Logo } from '@/components/logo';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/components/auth-provider';
 import {
   LayoutDashboard,
   Upload,
@@ -12,6 +13,7 @@ import {
   Languages,
   ImageIcon,
   Settings,
+  LogIn,
   LogOut,
 } from 'lucide-react';
 
@@ -21,7 +23,7 @@ interface NavItem {
   icon: React.ReactNode;
 }
 
-const navItems: NavItem[] = [
+const ALL_NAV_ITEMS: NavItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
   { name: 'Upload', href: '/dashboard/upload', icon: <Upload className="w-5 h-5" /> },
   { name: 'Vault', href: '/dashboard/vault', icon: <Vault className="w-5 h-5" /> },
@@ -31,8 +33,18 @@ const navItems: NavItem[] = [
   { name: 'Settings', href: '/dashboard/settings', icon: <Settings className="w-5 h-5" /> },
 ];
 
+const ITEMS_REQUIRING_AUTH = ['/dashboard/settings', '/dashboard/vault'];
+
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const auth = useAuth();
+  // Only show auth-only items after auth has settled (prevents flash of Vault/Settings on refresh)
+  const authReady = Boolean(auth && !auth.loading);
+  const isLoggedIn = Boolean(authReady && auth?.user);
+  const navItems = isLoggedIn
+    ? ALL_NAV_ITEMS
+    : ALL_NAV_ITEMS.filter((item) => !ITEMS_REQUIRING_AUTH.includes(item.href));
 
   return (
     <aside className="w-64 bg-background border-r border-border/50 flex flex-col h-screen sticky top-0">
@@ -78,12 +90,36 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Footer */}
+      {/* Footer: show only after auth ready to avoid flash */}
       <div className="border-t border-border/50 p-4 space-y-2">
-        <button className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-300">
-          <LogOut className="w-5 h-5" />
-          <span className="text-sm font-medium">Logout</span>
-        </button>
+        {!authReady ? (
+          <div className="px-4 py-2 text-sm text-muted-foreground">Loading…</div>
+        ) : auth?.user ? (
+          <button
+            type="button"
+            onClick={async () => {
+              await auth.signOut();
+              router.replace('/dashboard');
+            }}
+            className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-300"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="text-sm font-medium">Log out</span>
+          </button>
+        ) : (
+          <Link
+            href="/dashboard/auth"
+            className={cn(
+              'w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-300',
+              pathname === '/dashboard/auth'
+                ? 'bg-primary/20 text-primary border border-primary/30'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+            )}
+          >
+            <LogIn className="w-5 h-5" />
+            <span className="text-sm font-medium">Log in</span>
+          </Link>
+        )}
       </div>
     </aside>
   );

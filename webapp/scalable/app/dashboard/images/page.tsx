@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
 import { GlassCard } from '@/components/glass-card';
 import { GlowButton } from '@/components/glow-button';
@@ -12,17 +11,52 @@ import {
   searchUnsplashPhotos,
   type UnsplashPhoto,
 } from '@/lib/api';
-import { ArrowLeft, ImageIcon, Search, AlertCircle, ExternalLink } from 'lucide-react';
+import { useAuth } from '@/components/auth-provider';
+import { ImageIcon, Search, AlertCircle, ExternalLink, Heart } from 'lucide-react';
 
 const PER_PAGE = 12;
+const FAVOURITES_KEY = 'unsplashFavourites';
+
+function loadFavourites(): UnsplashPhoto[] {
+  if (typeof localStorage === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(FAVOURITES_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveFavourites(photos: UnsplashPhoto[]) {
+  try {
+    localStorage.setItem(FAVOURITES_KEY, JSON.stringify(photos));
+  } catch (_) {}
+}
 
 export default function FindImagesPage() {
+  const auth = useAuth();
+  const isLoggedIn = Boolean(auth && !auth.loading && auth.user);
   const [query, setQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [photos, setPhotos] = useState<UnsplashPhoto[]>([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [favourites, setFavourites] = useState<UnsplashPhoto[]>([]);
+
+  useEffect(() => {
+    setFavourites(loadFavourites());
+  }, []);
+
+  const isFavourite = (id: string) => favourites.some((p) => p.id === id);
+  const toggleFavourite = (photo: UnsplashPhoto) => {
+    const next = isFavourite(photo.id)
+      ? favourites.filter((p) => p.id !== photo.id)
+      : [...favourites, photo];
+    setFavourites(next);
+    saveFavourites(next);
+  };
 
   const loadPhotos = useCallback(async (pageNum: number, isSearch: boolean, append: boolean) => {
     if (!isUnsplashConfigured) return;
@@ -43,6 +77,29 @@ export default function FindImagesPage() {
 
   useEffect(() => {
     if (!isUnsplashConfigured) return;
+    const fromOcr = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('ocrTextForFindImages') : null;
+    if (fromOcr) {
+      sessionStorage.removeItem('ocrTextForFindImages');
+      const q = fromOcr.trim().slice(0, 100);
+      setSearchInput(q);
+      setQuery(q);
+      setPage(1);
+      if (q) {
+        setLoading(true);
+        searchUnsplashPhotos(q, PER_PAGE, 1).then((list) => {
+          setPhotos(list);
+          setHasMore(list.length >= PER_PAGE);
+          setLoading(false);
+        }).catch(() => {
+          setPhotos([]);
+          setHasMore(false);
+          setLoading(false);
+        });
+      } else {
+        loadPhotos(1, false, false);
+      }
+      return;
+    }
     loadPhotos(1, false, false);
     // Intentionally run only when config is available; loadPhotos is stable for initial load
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -86,10 +143,7 @@ export default function FindImagesPage() {
 
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center gap-3">
-        <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition">
-          <ArrowLeft className="w-5 h-5" />
-        </Link>
+      <div>
         <h1 className="text-3xl font-orbitron font-bold flex items-center gap-2">
           <ImageIcon className="w-8 h-8 text-primary" />
           Find Images
@@ -150,28 +204,84 @@ export default function FindImagesPage() {
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {photos.map((photo) => (
-                  <a
+                  <div
                     key={photo.id}
-                    href={photo.links?.html || 'https://unsplash.com'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group block rounded-lg overflow-hidden border border-border hover:border-primary/50 transition-colors"
+                    className="group relative rounded-lg overflow-hidden border border-border hover:border-primary/50 transition-colors"
                   >
-                    <div className="aspect-square relative bg-muted">
-                      <Image
-                        src={photo.urls?.regular || photo.urls?.small || photo.urls?.thumb || ''}
-                        alt={photo.alt_description || 'Unsplash photo'}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
-                      />
-                    </div>
-                    <div className="p-2 bg-background/80">
-                      <p className="text-xs text-muted-foreground truncate">
-                        by {photo.user?.name || 'Unknown'}
-                      </p>
-                    </div>
-                  </a>
+                    <a
+                      href={photo.links?.html || 'https://unsplash.com'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block"
+                    >
+                      <div className="aspect-square relative bg-muted">
+                        <Image
+                          src={photo.urls?.regular || photo.urls?.small || photo.urls?.thumb || ''}
+                          alt={photo.alt_description || 'Unsplash photo'}
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+                        />
+                      </div>
+                      <div className="p-2 bg-background/80">
+                        <p className="text-xs text-muted-foreground truncate">
+                          by {photo.user?.name || 'Unknown'}
+                        </p>
+                      </div>
+                    </a>
+                    {isLoggedIn && (
+                      <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleFavourite(photo);
+                          }}
+                          className="p-2 rounded-full bg-background/80 border border-border hover:bg-primary/20 transition-colors"
+                          title={isFavourite(photo.id) ? 'Remove from favourites' : 'Add to favourites'}
+                          aria-label={isFavourite(photo.id) ? 'Remove from favourites' : 'Add to favourites'}
+                        >
+                          <Heart
+                            className={`w-5 h-5 ${isFavourite(photo.id) ? 'fill-primary text-primary' : 'text-muted-foreground'}`}
+                            aria-hidden
+                          />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            try {
+                              const existing = localStorage.getItem('vaultItems');
+                              const items = existing ? JSON.parse(existing) : [];
+                              const title =
+                                (photo as any).description ||
+                                photo.alt_description ||
+                                `Unsplash image by ${photo.user?.name || 'Unknown'}`;
+                              const imageUrl =
+                                photo.urls?.regular || photo.urls?.small || photo.urls?.thumb || '';
+                              const newItem = {
+                                id: Date.now().toString(),
+                                type: 'image' as const,
+                                title: title.slice(0, 80),
+                                content: imageUrl,
+                                date: new Date().toLocaleString(),
+                                tags: ['unsplash', 'image'],
+                              };
+                              items.unshift(newItem);
+                              localStorage.setItem('vaultItems', JSON.stringify(items.slice(0, 50)));
+                            } catch (err) {
+                              console.error('Error saving image to vault:', err);
+                            }
+                          }}
+                          className="px-2 py-1 rounded-full bg-background/90 border border-border text-xs text-primary hover:bg-primary/10"
+                        >
+                          Save to Vault
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
               {hasMore && (
@@ -182,6 +292,58 @@ export default function FindImagesPage() {
                 </div>
               )}
             </>
+          )}
+
+          {favourites.length > 0 && (
+            <div className="mt-10 space-y-4">
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                <Heart className="w-6 h-6 text-primary fill-primary" aria-hidden />
+                Favourites
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {favourites.map((photo) => (
+                  <div
+                    key={photo.id}
+                    className="group relative rounded-lg overflow-hidden border border-border hover:border-primary/50 transition-colors"
+                  >
+                    <a
+                      href={photo.links?.html || 'https://unsplash.com'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block"
+                    >
+                      <div className="aspect-square relative bg-muted">
+                        <Image
+                          src={photo.urls?.regular || photo.urls?.small || photo.urls?.thumb || ''}
+                          alt={photo.alt_description || 'Unsplash photo'}
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+                        />
+                      </div>
+                      <div className="p-2 bg-background/80">
+                        <p className="text-xs text-muted-foreground truncate">
+                          by {photo.user?.name || 'Unknown'}
+                        </p>
+                      </div>
+                    </a>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleFavourite(photo);
+                      }}
+                      className="absolute top-2 right-2 p-2 rounded-full bg-background/80 border border-border hover:bg-primary/20 transition-colors"
+                      title="Remove from favourites"
+                      aria-label="Remove from favourites"
+                    >
+                      <Heart className="w-5 h-5 fill-primary text-primary" aria-hidden />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
           <p className="text-xs text-muted-foreground text-center">

@@ -7,7 +7,7 @@ import { GlowButton } from '@/components/glow-button';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { CaptionCard } from '@/components/caption-card';
 import { generateCaptions, generateTags, enhanceContent } from '@/lib/api';
-import { AlertCircle, ArrowLeft, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, KeyRound } from 'lucide-react';
 
 type Tone = 'professional' | 'creative' | 'viral';
 type EnhancementAction = 'rewrite-formal' | 'rewrite-viral' | 'summarize' | 'expand' | 'translate';
@@ -57,11 +57,8 @@ export default function AIToolsPage() {
     
     try {
       const result = await generateCaptions(inputText, tone);
-      if (result.length > 0) {
-        setCaptions(result);
-      } else {
-        setError('Failed to generate captions. Please ensure your OpenAI API key is set.');
-      }
+      setCaptions(result.length > 0 ? result : []);
+      if (result.length === 0) setError('OpenAI returned no captions. Try different text or tone.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -80,11 +77,8 @@ export default function AIToolsPage() {
     
     try {
       const result = await generateTags(inputText);
-      if (result.length > 0) {
-        setTags(result);
-      } else {
-        setError('Failed to generate tags. Please ensure your OpenAI API key is set.');
-      }
+      setTags(result?.length ? result : []);
+      if (!result?.length) setError('OpenAI returned no tags.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -103,11 +97,8 @@ export default function AIToolsPage() {
     
     try {
       const result = await enhanceContent(inputText, selectedEnhancement);
-      if (result) {
-        setEnhancedText(result);
-      } else {
-        setError('Failed to enhance content. Please ensure your OpenAI API key is set.');
-      }
+      setEnhancedText(result || '');
+      if (!result) setError('OpenAI returned no content.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -145,11 +136,6 @@ export default function AIToolsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="space-y-2">
-            <div className="flex items-center gap-3 mb-2">
-              <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition">
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
-            </div>
             <h1 className="text-4xl font-orbitron font-bold">
               AI <span className="neon-text">Tools</span>
             </h1>
@@ -158,6 +144,19 @@ export default function AIToolsPage() {
             </p>
           </div>
         </div>
+
+        {/* Where to paste OpenAI API key */}
+        <GlassCard className="border-primary/30 space-y-2">
+          <div className="flex items-start gap-3">
+            <KeyRound className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-bold text-foreground">OpenAI API key</h3>
+              <p className="text-sm text-muted-foreground">
+                For captions, tags, and enhancements to work, set your key in <code className="px-1.5 py-0.5 rounded bg-muted text-foreground text-xs">.env.local</code> as <code className="px-1.5 py-0.5 rounded bg-muted text-foreground text-xs">NEXT_PUBLIC_OPENAI_API_KEY=sk-...</code> (no quotes, no spaces). Restart the dev server after changing .env.local.
+              </p>
+            </div>
+          </div>
+        </GlassCard>
 
         {/* Input Text Area */}
         <GlassCard className="space-y-3">
@@ -301,15 +300,16 @@ export default function AIToolsPage() {
                 <h3 className="font-bold text-lg">Generated Tags</h3>
                 <div className="flex flex-wrap gap-2">
                   {tags.map((tag, idx) => (
-                    <div
+                    <button
                       key={idx}
+                      type="button"
                       className="px-3 py-2 bg-primary/20 text-primary rounded-lg text-sm font-medium hover:bg-primary/30 transition-colors cursor-pointer group"
                       onClick={() => navigator.clipboard.writeText(tag)}
                       title="Click to copy"
                     >
                       <span className="group-hover:hidden">{tag}</span>
                       <span className="hidden group-hover:inline">Copy</span>
-                    </div>
+                    </button>
                   ))}
                 </div>
                 <div className="pt-4 flex gap-2">

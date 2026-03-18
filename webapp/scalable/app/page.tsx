@@ -189,7 +189,7 @@ export default function LandingPage() {
               Ready to Transform Your Content?
             </h2>
             <p className="text-lg text-muted-foreground">
-              Start creating, storing, and elevating your ideas today
+              Start creating, storing and elevating your ideas today
             </p>
           </div>
           <Link href="/dashboard">

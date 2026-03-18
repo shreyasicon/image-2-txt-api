@@ -38,6 +38,7 @@ export function VaultCard({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const isImageDataUrl = type === 'image' && typeof content === 'string' && content.startsWith('data:');
   const contentPreview = content.length > 100 ? content.substring(0, 100) + '...' : content;
 
   return (
@@ -89,15 +90,27 @@ export function VaultCard({
 
       {/* Preview */}
       {!expanded && (
-        <p className="text-sm text-muted-foreground line-clamp-2">{contentPreview}</p>
+        isImageDataUrl ? (
+          <div className="rounded-lg overflow-hidden bg-muted max-h-32">
+            <img src={content} alt={title} className="w-full h-full object-contain" />
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground line-clamp-2">{contentPreview}</p>
+        )
       )}
 
       {/* Expanded View */}
       {expanded && (
         <div className="space-y-3 border-t border-border/50 pt-3">
-          <div className="bg-background/50 rounded-lg p-3 max-h-48 overflow-y-auto">
-            <p className="text-sm text-foreground whitespace-pre-wrap">{content}</p>
-          </div>
+          {isImageDataUrl ? (
+            <div className="rounded-lg overflow-hidden bg-muted max-h-64">
+              <img src={content} alt={title} className="w-full h-full object-contain" />
+            </div>
+          ) : (
+            <div className="bg-background/50 rounded-lg p-3 max-h-48 overflow-y-auto">
+              <p className="text-sm text-foreground whitespace-pre-wrap">{content}</p>
+            </div>
+          )}
 
           {tags.length > 0 && (
             <div className="space-y-2">

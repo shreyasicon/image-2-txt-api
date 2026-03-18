@@ -50,6 +50,12 @@ Create a `.env.local` file in the root directory:
 
 ```env
 NEXT_PUBLIC_OPENAI_API_KEY=your_openai_api_key_here
+# OCR API (optional; defaults to demo endpoint)
+NEXT_PUBLIC_OCR_API_BASE=https://your-api.execute-api.us-east-1.amazonaws.com/prod
+# Cognito (optional; for Sign in and My Uploads – run API deploy.js to create the User Pool)
+NEXT_PUBLIC_COGNITO_USER_POOL_ID=us-east-1_xxxxx
+NEXT_PUBLIC_COGNITO_CLIENT_ID=xxxxxxxxxxxx
+NEXT_PUBLIC_AWS_REGION=us-east-1
 ```
 
 Get your OpenAI API key from [platform.openai.com](https://platform.openai.com)

@@ -1,11 +1,39 @@
 'use client';
 
-import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { GlassCard } from '@/components/glass-card';
-import { GlowButton } from '@/components/glow-button';
-import { ArrowLeft, Github, ExternalLink } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/components/auth-provider';
+import { Github, ExternalLink, User } from 'lucide-react';
 
 export default function SettingsPage() {
+  const auth = useAuth();
+  const router = useRouter();
+  const [displayName, setDisplayName] = useState('');
+  const [nameSaving, setNameSaving] = useState(false);
+  const [nameSaved, setNameSaved] = useState(false);
+
+  useEffect(() => {
+    if (auth?.user?.name) setDisplayName(auth.user.name);
+    else if (auth?.user?.username) setDisplayName(auth.user.username);
+  }, [auth?.user?.name, auth?.user?.username]);
+
+  const handleSaveName = async () => {
+    if (!auth?.updateUsername || !displayName.trim()) return;
+    setNameSaving(true);
+    setNameSaved(false);
+    try {
+      await auth.updateUsername(displayName.trim());
+      setNameSaved(true);
+      setTimeout(() => setNameSaved(false), 3000);
+    } catch (_) {
+      setNameSaved(false);
+    } finally {
+      setNameSaving(false);
+    }
+  };
+
   const handleClearCache = () => {
     if (window.confirm('Clear all saved data? This cannot be undone.')) {
       localStorage.clear();
@@ -14,16 +42,28 @@ export default function SettingsPage() {
     }
   };
 
+  // Don't render protected content until auth has loaded (prevents flash on refresh)
+  if (auth?.loading) {
+    return (
+      <div className="p-8">
+        <p className="text-muted-foreground">Loading…</p>
+      </div>
+    );
+  }
+  if (auth && !auth.user) {
+    router.replace('/dashboard');
+    return (
+      <div className="p-8">
+        <p className="text-muted-foreground">Redirecting…</p>
+      </div>
+    );
+  }
+
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <div className="space-y-8">
         {/* Header */}
         <div className="space-y-2">
-          <div className="flex items-center gap-3 mb-2">
-            <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-          </div>
           <h1 className="text-4xl font-orbitron font-bold">
             <span className="neon-text">Settings</span>
           </h1>
@@ -31,6 +71,36 @@ export default function SettingsPage() {
             Manage your preferences and configurations
           </p>
         </div>
+
+        {/* Profile / Username (when logged in) */}
+        {auth?.user && (
+          <GlassCard className="space-y-4">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <User className="w-5 h-5 text-primary" />
+              Profile
+            </h2>
+            <div className="space-y-4 border-t border-border/50 pt-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium">Display name</label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  This name is shown in your account. You can change it anytime.
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Enter your name"
+                    className="flex-1 min-w-[200px] rounded-lg border border-border bg-input px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                  <Button onClick={handleSaveName} disabled={nameSaving || !displayName.trim()}>
+                    {nameSaving ? 'Saving…' : nameSaved ? 'Saved' : 'Save'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </GlassCard>
+        )}
 
         {/* API Configuration */}
         <GlassCard className="space-y-4">

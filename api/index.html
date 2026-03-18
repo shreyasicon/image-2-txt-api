@@ -590,7 +590,8 @@
 
         <section class="try-section" id="try">
             <div class="section-title">
-                <h2>Try it <span class="green">yourself</span></h2>
+                <h2>Try it <span class="green">with Validation</span></h2>
+                <p style="color:var(--text-muted);font-size:0.9375rem;margin-top:0.5rem;">Upload and extract text with full validation, quality metrics, and script detection (ocr_postprocess).</p>
             </div>
             <div class="try-card">
                 <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
@@ -646,7 +647,7 @@
         <section class="try-section" id="try-no-validation">
             <div class="section-title">
                 <h2>Or Try <span class="green">without Validation</span></h2>
-                <p style="color:var(--text-muted);font-size:0.9375rem;margin-top:0.5rem;">Upload and extract text only — no Python validation layer (ocr_postprocess). Same OCR and S3 storage.</p>
+                <p style="color:var(--text-muted);font-size:0.9375rem;margin-top:0.5rem;">Upload and extract text only — no validation layer (ocr_postprocess). Same OCR and S3 storage. Send <code>skipValidation: true</code> in the request body.</p>
             </div>
             <div class="try-card">
                 <div class="upload-zone" id="uploadZoneNoValidation" onclick="document.getElementById('fileInputNoValidation').click()">

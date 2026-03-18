@@ -2,16 +2,22 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useAuth } from '@/components/auth-provider';
 import { UploadCard } from '@/components/upload-card';
 import { OCRResultCard } from '@/components/ocr-result-card';
 import { GlassCard } from '@/components/glass-card';
 import { GlowButton } from '@/components/glow-button';
 import { LoadingSpinner } from '@/components/loading-spinner';
-import { extractTextFromImage, getOcrApiBaseUrl, type OCRExtractResult } from '@/lib/api';
-import { formatConfidence } from '@/lib/api';
-import { AlertCircle, Copy, Check, Languages } from 'lucide-react';
+import {
+  extractTextFromImage,
+  cacheOcrResult,
+  formatConfidence,
+  type OCRExtractResult,
+} from '@/lib/api';
+import { AlertCircle, Copy, Check, Languages, ImageIcon } from 'lucide-react';
 
 export default function UploadPage() {
+  const auth = useAuth();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [ocrResult, setOcrResult] = useState<OCRExtractResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -25,14 +31,45 @@ export default function UploadPage() {
     }
   };
 
+  const EXTRACTED_IMAGES_KEY = 'extractedImages';
+  const MAX_EXTRACTED_IMAGES = 50;
+  const MAX_DATAURL_SIZE = 2 * 1024 * 1024; // 2MB
+
   const handleFileSelect = async (file: File) => {
     setSelectedFile(file);
     setOcrResult(null);
     setIsLoading(true);
+    const getToken = auth?.getIdToken ? () => auth.getIdToken() : undefined;
 
     try {
-      const result = await extractTextFromImage(file);
+      const result = await extractTextFromImage(file, { getToken });
       setOcrResult(result);
+      if (result.success && result.jobId) {
+        cacheOcrResult(result.jobId, result);
+        // Store in vault "Extracted images" section (localStorage)
+        if (file.size <= MAX_DATAURL_SIZE && typeof window !== 'undefined') {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const dataUrl = reader.result as string;
+            try {
+              const raw = localStorage.getItem(EXTRACTED_IMAGES_KEY);
+              const list: { id: string; jobId: string; filename: string; date: string; dataUrl: string }[] = raw ? JSON.parse(raw) : [];
+              list.unshift({
+                id: crypto.randomUUID(),
+                jobId: result.jobId!,
+                filename: file.name || result.filename || 'extracted',
+                date: new Date().toISOString().slice(0, 10),
+                dataUrl,
+              });
+              localStorage.setItem(EXTRACTED_IMAGES_KEY, JSON.stringify(list.slice(0, MAX_EXTRACTED_IMAGES)));
+            } catch (_) {}
+            window.dispatchEvent(new CustomEvent('vault-stats-update'));
+          };
+          reader.readAsDataURL(file);
+        } else {
+          window.dispatchEvent(new CustomEvent('vault-stats-update'));
+        }
+      }
     } catch (error) {
       setOcrResult({
         text: '',
@@ -63,9 +100,6 @@ export default function UploadPage() {
           <p className="text-muted-foreground text-lg">
             Upload an image and extract text using advanced OCR technology
           </p>
-          <p className="text-sm text-muted-foreground">
-            Lambda API base: <code className="bg-muted/80 px-1.5 py-0.5 rounded break-all">{getOcrApiBaseUrl()}</code> (POST /ocr/base64, GET/PUT/DELETE /ocr/:jobId)
-          </p>
         </div>
 
         {/* Upload Section */}
@@ -86,9 +120,11 @@ export default function UploadPage() {
               <GlassCard className="h-full flex flex-col items-center justify-center min-h-80">
                 <div className="space-y-4 text-center">
                   <LoadingSpinner />
-                  <p className="text-foreground font-medium">Processing your image...</p>
+                  <p className="text-foreground font-medium">
+                    Extracting text...
+                  </p>
                   <p className="text-sm text-muted-foreground">
-                    This may take a few moments
+                    Results will appear as soon as the API responds
                   </p>
                 </div>
               </GlassCard>
@@ -102,7 +138,7 @@ export default function UploadPage() {
                     <h3 className="font-bold text-destructive">Error</h3>
                     <p className="text-sm text-muted-foreground">{ocrResult.error}</p>
                     <p className="text-xs text-muted-foreground mt-2">
-                      OCR API: <code className="bg-muted px-1 rounded break-all">{getOcrApiBaseUrl()}</code>. If this fails from the browser, ensure the API allows CORS for this origin.
+                      Check your connection and try again.
                     </p>
                   </div>
                 </div>
@@ -137,9 +173,29 @@ export default function UploadPage() {
               <span className="text-sm text-muted-foreground">
                 Confidence <span className="font-bold text-primary">{formatConfidence(ocrResult.confidence)}%</span>
               </span>
-              <Link href="/dashboard/translate" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/20 text-primary font-medium hover:bg-primary/30 transition-colors text-sm">
+              <Link
+                href="/dashboard/translate"
+                onClick={() => {
+                  if (ocrResult?.text && typeof sessionStorage !== 'undefined') {
+                    sessionStorage.setItem('ocrTextForTranslate', ocrResult.text);
+                  }
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/20 text-primary font-medium hover:bg-primary/30 transition-colors text-sm"
+              >
                 <Languages className="w-4 h-4" />
                 Translate to multiple languages
+              </Link>
+              <Link
+                href="/dashboard/images"
+                onClick={() => {
+                  if (ocrResult?.text && typeof sessionStorage !== 'undefined') {
+                    sessionStorage.setItem('ocrTextForFindImages', ocrResult.text);
+                  }
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/20 text-primary font-medium hover:bg-primary/30 transition-colors text-sm"
+              >
+                <ImageIcon className="w-4 h-4" />
+                Find image for this text
               </Link>
               <button
                 onClick={handleClear}

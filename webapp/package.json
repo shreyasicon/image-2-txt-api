@@ -1,0 +1,12 @@
+{
+  "name": "webapp-root",
+  "private": true,
+  "description": "Run scripts from webapp/scalable. Always cd into scalable first so tailwindcss resolves from the right node_modules.",
+  "scripts": {
+    "dev": "cd scalable && npm run dev",
+    "build": "cd scalable && npm run build",
+    "start": "cd scalable && npm run start",
+    "lint": "cd scalable && npm run lint",
+    "deploy": "cd scalable && npm run deploy"
+  }
+}

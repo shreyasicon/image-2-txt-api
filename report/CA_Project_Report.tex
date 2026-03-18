@@ -1,0 +1,223 @@
+% CA - Project Report (IEEE 2-column conference format, ~8 pages)
+% Student: Sai Shreyas Gubbi Harish | ID: 24194956
+% Course: Scalable Cloud Applications
+
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{multirow}
+\hypersetup{colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue}
+
+\begin{document}
+
+\title{Cloud-Native Image-to-Text and Content Enhancement Platform: Architecture, Implementation and Deployment}
+
+\author{\IEEEauthorblockN{Sai Shreyas Gubbi Harish}
+\IEEEauthorblockA{Student ID: 24194956 \\
+National College of Ireland \\
+Scalable Cloud Applications \\
+Email: [your.email@student.ncirl.ie]}
+}
+
+\maketitle
+
+\begin{abstract}
+This project presents a cloud-native image-to-text and content enhancement platform designed and implemented on Amazon Web Services (AWS). The solution combines a serverless, scalable backend for Optical Character Recognition (OCR) with a modern Next.js front-end that integrates multiple web services. The primary backend service is a custom OCR API built using AWS Lambda, API Gateway, Amazon S3, Amazon DynamoDB, Amazon SQS, and optional Amazon ElastiCache (Redis). It accepts image uploads, runs OCR using AWS Textract with a Tesseract.js fallback, performs post-processing and validation, persists results, and exposes CRUD operations via a RESTful API. On the front-end, a Next.js application allows users to upload images, translate extracted text using a classmate's Text-to-Multiple-Languages API, generate AI-based captions and tags using a public API, and discover images using the public Unsplash API. Scalability is achieved through serverless compute, queue-based asynchronous processing, content-based caching, and CDN-backed static delivery. The architecture incorporates per-user data isolation and authentication via Amazon Cognito. Continuous integration and delivery are implemented using GitHub Actions, SonarCloud, and OWASP ZAP, with scripted deployments to AWS. The report critically analyses the selected architecture and reflects on lessons learned.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Cloud computing, serverless, AWS Lambda, OCR, REST API, scalability, DynamoDB, SQS, Next.js, CI/CD.
+\end{IEEEkeywords}
+
+%==============================================================================
+\section{Introduction}
+%==============================================================================
+
+\IEEEPARstart{T}{he} proliferation of digital content and the need to repurpose text from images---whether for social media, document digitisation, or knowledge management---has increased demand for scalable, AI-enhanced workflows in the cloud. Organisations and individuals require systems that can ingest images, extract meaningful text reliably, and integrate that text with translation, captioning, and discovery services without incurring operational overhead or single points of failure. This project addresses that need by designing and implementing a full-stack cloud application that combines a custom, scalable OCR backend with a modern web front-end that composes multiple external and internal web services.
+
+The assignment required the delivery of: (1) a front-end application consuming between three and five different web services, including at least one service written by the author, at least one written by a classmate, and at least one publicly available service; (2) a backend web service accessible via APIs (e.g., RESTful) that receives and processes data and returns meaningful responses; and (3) a backend designed for scalability using mechanisms such as queues, Function-as-a-Service (FaaS), and autoscaling. The solution had to be implemented, tested, and deployed to a public cloud platform, with the API shared for use by classmates. This report documents the project specification, architecture and design choices, implementation details, continuous integration and deployment (CI/CD), and conclusions including a critical analysis and reflection.
+
+The main objectives of the project were: to design and implement a scalable backend web service exposing OCR functionality via a RESTful API capable of handling variable load; to build a front-end that composes at least three and up to five web services, including the author's OCR API, a classmate's Text-to-Multiple-Languages translation API, and public services such as Unsplash and an AI text-generation API; to integrate authentication and per-user data management so that OCR jobs and stored assets are associated with individual users; to implement CI/CD with automated testing, quality checks, and secure deployment; and to critically justify the chosen cloud architecture versus alternatives such as monolithic or EC2-based deployments. The remainder of this report is structured as follows: Section~II presents the project specification and requirements; Section~III describes the architecture and design, with justification of patterns; Section~IV details the implementation of the backend and front-end; Section~V covers CI/CD; and Section~VI concludes with findings and reflection.
+
+%==============================================================================
+\section{Project Specification and Requirements}
+%==============================================================================
+
+\subsection{Functional Requirements}
+
+The \textbf{custom OCR backend service} (author-written) must accept image uploads via HTTP, using either multipart form data or base64-encoded JSON payloads suitable for invocation through API Gateway. It must execute OCR to extract plain text and an associated confidence score, with optional validation and quality metrics (e.g., character and word counts, script detection). All OCR jobs must be persisted in a durable store with a unique job identifier (UUID) so that clients can retrieve, update, or delete results later. The API must expose CRUD operations: create job (upon upload), get result by job ID, update extracted text, delete job, and list jobs scoped to the authenticated user. The backend must also enforce content policies: sensitive or prohibited content (e.g., demographics, PII) must be detected and the API must return a meaningful error message without returning the extracted text.
+
+The \textbf{front-end web application} must provide a unified dashboard offering: image upload and display of OCR results; translation of extracted text into multiple target languages; AI-powered caption and tag generation from text; image discovery and favouriting; and a ``vault'' view for saved user content (captions, texts, and images). User-specific features---such as ``My Uploads,'' ``Settings,'' ``Vault,'' and the previously converted translations list---must be gated by authentication; unauthenticated users must not see or access these sections.
+
+The system must integrate \textbf{between three and five distinct web services}. Table~\ref{tab:services} summarises the services used. The author's OCR API (1) is the primary custom backend. The classmate's ``Text to Multiple Languages'' API (2) is consumed for translation. The Unsplash API (3) and a public AI text API (4) provide image discovery and caption/tag generation. Additional internal capabilities---such as listing the current user's S3 links via the same OCR API (5)---count toward the composition of services from the front-end's perspective.
+
+\begin{table}[t]
+\caption{Web services integrated by the front-end.}
+\label{tab:services}
+\centering
+\begin{tabular}{@{}clll@{}}
+\toprule
+No. & Service & Owner/Type & Purpose \\
+\midrule
+1 & OCR API (Lambda) & Author & Upload image, OCR, CRUD jobs \\
+2 & Text-to-Multiple-Languages API & Classmate & Translate text to 5 languages \\
+3 & Unsplash API & Public & Search and browse stock photos \\
+4 & AI text API (e.g., OpenAI-style) & Public & Captions, tags, content enhancement \\
+5 & User S3 links (same API) & Author & List user's stored images/jobs \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{User management and data persistence} requirements are as follows. Users must authenticate via AWS Cognito User Pools; the front-end must obtain an identity token and send it with requests that require authorisation. Per-user OCR jobs must be stored in a database with a \texttt{userId} attribute and a global secondary index (GSI) to support ``list my jobs.'' A separate table must maintain the mapping between users and their stored S3 object keys (UserS3Links) for easier maintenance of user-specific assets. The vault feature in the web application must allow users to save text snippets (e.g., captions) and image references (e.g., from Unsplash) into local storage or user-scoped storage without requiring a full upload-and-extract flow every time.
+
+\subsection{Non-Functional Requirements}
+
+The system must be \textbf{scalable}: the backend must leverage serverless compute (Lambda), queues (SQS), and NoSQL (DynamoDB) so that it can scale with demand without manual provisioning. \textbf{Performance} objectives include minimising cold-start impact where possible and avoiding unnecessary client-server round-trips; repeated OCR on the same image content should be served from a cache when feasible. \textbf{Security} requirements include correct configuration of Cross-Origin Resource Sharing (CORS) for the web origin, verification of JSON Web Tokens (JWTs) issued by Cognito at the API layer, and execution of static (e.g., SonarCloud) and dynamic (e.g., OWASP ZAP) security analysis in the pipeline. \textbf{Reliability} demands that asynchronous OCR processing be resilient to transient failures, using a message queue and idempotent consumer logic. \textbf{Maintainability} requires a clear separation between the API and webapp codebases, scripted deployment procedures, and documentation of the architecture and API contract.
+
+%==============================================================================
+\section{Architecture and Design}
+%==============================================================================
+
+\subsection{High-Level Architecture}
+
+The system follows a \textbf{two-tier serverless architecture}. The \textbf{front-end tier} is implemented as a Next.js~16 application (App Router) that is statically exported (\texttt{output: `export'}) and deployed to an Amazon S3 bucket. Access to the application is provided through an Amazon CloudFront distribution, which serves the static assets and caches them at the edge. Because Next.js static export produces one HTML file per route (e.g., \texttt{/dashboard/upload.html}), a CloudFront Function is attached to the viewer-request event to rewrite incoming requests (e.g., \texttt{/dashboard/upload}) to the corresponding \texttt{.html} file, ensuring that both client-side navigation and direct URL access work correctly.
+
+The \textbf{backend tier} is implemented as a single Node.js Express application (\texttt{server.js}) that runs inside an AWS Lambda function. The function is invoked via an Amazon API Gateway HTTP API (v2), which provides a public HTTPS endpoint. The Express app handles routing, CORS, authentication middleware, and business logic. Supporting AWS resources include: Amazon S3 for storing uploaded images; Amazon DynamoDB for OCR job records, a user--S3 link table, and an optional OCR result cache table; Amazon SQS for a job queue used in the asynchronous OCR path; and an optional Amazon ElastiCache (Redis) cluster used by the SQS consumer Lambda to cache OCR results for high throughput. A separate Lambda function (the SQS consumer) is triggered by the queue and performs the actual OCR and database updates for asynchronously submitted jobs. This decomposition keeps the API responsive while offloading CPU-intensive OCR work to the consumer.
+
+Data flow is as follows. For \textbf{synchronous} OCR: the client sends a base64 image to \texttt{POST /ocr/base64}; the API Lambda decodes the image, optionally checks a content-addressed cache, runs OCR (Textract with Tesseract fallback), applies validation and blocking checks, stores the job and image in DynamoDB and S3, and returns the result. For \textbf{asynchronous} OCR: the client sends to \texttt{POST /ocr/base64?async=1}; the API writes a ``pending'' job record, uploads the image to S3, and enqueues a message to SQS; the consumer Lambda processes the message, runs OCR, updates the job to ``completed,'' and optionally writes to the cache. The front-end, when using the synchronous path, simply waits for the API response; when using the async path, it would poll \texttt{GET /ocr/:jobId} until the status is completed or failed. In the delivered solution, the webapp uses the synchronous path for a direct, low-latency user experience.
+
+\subsection{Design Patterns and Justification}
+
+\textbf{Serverless microservice (FaaS).} Using AWS Lambda for the OCR API eliminates the need to provision or manage servers and allows the platform to scale automatically with the number of requests \cite{aws-lambda}. This aligns with the Function-as-a-Service pattern and reduces operational burden while meeting the assignment's scalability requirement.
+
+\textbf{Queue-based asynchronous processing.} Amazon SQS decouples the API from the OCR worker. When asynchronous processing is requested, the API enqueues a message and returns immediately with a job identifier; a separate Lambda function consumes messages and performs OCR. This implements the worker-queue (competing consumers) pattern \cite{eip}, isolates latency and failures in the OCR pipeline, and allows the system to absorb bursts without blocking the API.
+
+\textbf{Polyglot and layered caching.} The system uses DynamoDB for an OCR result cache keyed by content hash (with TTL), client-side \texttt{sessionStorage} for recently fetched job results in the browser, and optional Redis (ElastiCache) in the consumer for higher throughput. This follows the cache-aside pattern and reduces redundant OCR and downstream costs.
+
+\textbf{Token-based authentication and per-user isolation.} AWS Cognito User Pools issue ID tokens (JWTs) that the front-end sends as \texttt{Authorization: Bearer <token>}. The API verifies the token using \texttt{aws-jwt-verify} and attaches a \texttt{userId} (Cognito \texttt{sub}) to the request. All job and S3-link writes are associated with this \texttt{userId}, and list endpoints query by \texttt{userId} using a GSI \cite{cognito}. This ensures multi-tenant isolation without custom session storage on the server.
+
+\textbf{Static front-end with CDN.} The Next.js application is built as a static export and served from S3 and CloudFront. This avoids running a Node server for the UI, reduces cost and operational complexity, and leverages edge caching for fast load times. The trade-off is that all routing and data fetching are client-side, which is acceptable for this application.
+
+These choices are explicitly favoured over a monolithic deployment on EC2 or a single long-running server: the former would require manual scaling and higher operational overhead; the latter would not meet the assignment's emphasis on queues, FaaS, and autoscaling.
+
+\subsection{Data Model and API Contract}
+
+Table~\ref{tab:tables} summarises the DynamoDB tables used by the backend. The \texttt{OCRJobs} table stores each OCR job with a UUID partition key; the \texttt{ByUserId} GSI allows efficient listing of jobs per user. The \texttt{UserS3Links} table stores the mapping of \texttt{userId} and \texttt{jobId} to S3 key and filename. The \texttt{OCRCache} table stores cached OCR results keyed by MD5 hash of the image content, with a TTL attribute for expiration.
+
+\begin{table}[t]
+\caption{DynamoDB tables and primary usage.}
+\label{tab:tables}
+\centering
+\begin{tabular}{@{}llp{4.2cm}@{}}
+\toprule
+Table & Key(s) & Purpose \\
+\midrule
+OCRJobs & jobId (PK), userId (GSI) & Job metadata, text, confidence, status, s3Key \\
+UserS3Links & userId (PK), jobId (SK) & User--S3 object mapping \\
+OCRCache & contentHash (PK), ttl & Cache OCR result by image hash \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The REST API contract is summarised in Table~\ref{tab:api}. All endpoints return JSON. The \texttt{POST /ocr/base64} and \texttt{POST /ocr/base64?async=1} endpoints accept a JSON body with \texttt{image} (data URL), \texttt{language}, and \texttt{filename}; optional \texttt{skipValidation: true} returns only text and confidence without validation metadata. Authenticated endpoints require the \texttt{Authorization: Bearer <idToken>} header.
+
+\begin{table}[t]
+\caption{Main API endpoints (OCR API).}
+\label{tab:api}
+\centering
+\begin{tabular}{@{}llp{3.8cm}@{}}
+\toprule
+Method & Path & Description \\
+\midrule
+GET & / & API info (Lambda) or serve UI (local) \\
+GET & /health & Liveness \\
+GET & /ready & Readiness (DynamoDB) \\
+POST & /ocr/base64 & Sync OCR; returns job + text \\
+POST & /ocr/base64?async=1 & Enqueue job; returns 202 + jobId \\
+GET & /ocr/:jobId & Get job result \\
+GET & /ocr?list=mine & List current user's jobs (auth) \\
+GET & /users/me/s3-links & List user's S3 links (auth) \\
+PUT & /ocr/:jobId & Update job text \\
+DELETE & /ocr/:jobId & Delete job \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%==============================================================================
+\section{Implementation}
+%==============================================================================
+
+\subsection{Backend: OCR API and Consumer}
+
+The backend is implemented in Node.js (ES modules where applicable). The main Express application (\texttt{api/lambda-code/server.js}) configures CORS to reflect the request \texttt{Origin} and set \texttt{Access-Control-Allow-Credentials: true}, which is necessary when the front-end is served from a different domain (e.g., CloudFront) and sends credentials. API Gateway's built-in CORS was disabled so that all preflight and actual requests are handled by the Lambda, avoiding conflicts with credentialed requests. A middleware reads the \texttt{Authorization} header, verifies the JWT using \texttt{aws-jwt-verify} with the Cognito User Pool ID and Client ID, and sets \texttt{req.userId} to the token's \texttt{sub} claim.
+
+The OCR pipeline is split across modules. \texttt{ocr-process.js} contains the core OCR logic: it writes the image to a temporary file, invokes AWS Textract \texttt{DetectDocumentText} for the primary extraction, and falls back to Tesseract.js (with \texttt{sharp} for pre-processing) when Textract is unavailable or for local development. The raw text and confidence are returned to the caller. \texttt{ocr-postprocess.js} provides validation and enrichment: it normalises line breaks and whitespace for the API response, computes quality metrics (character count, word count, alpha ratio), performs script detection, and runs blocked-word and sensitivity checks against configurable lists (e.g., PII, payment info). If blocking is triggered, the API responds with \texttt{400} and a reason; otherwise the job is saved and the response includes the normalised text, confidence, and optionally \texttt{uploadValidation}, \texttt{quality}, and \texttt{script}.
+
+Persistence uses the AWS SDK v3 (\texttt{@aws-sdk/client-dynamodb}, \texttt{@aws-sdk/client-s3}, \texttt{@aws-sdk/client-sqs}). Job records are written with \texttt{PutItemCommand}; updates (e.g., status transition from \texttt{pending} to \texttt{completed}) use \texttt{UpdateItemCommand}. The SQS consumer (\texttt{api/consumer/index.js}) is a separate Lambda function: it receives SQS events, parses the message body for \texttt{jobId}, \texttt{s3Key}, \texttt{bucket}, \texttt{filename}, \texttt{userId}, and \texttt{language}; downloads the image from S3 to \texttt{/tmp}; runs the same \texttt{processOCR} and post-processing logic; updates the job in DynamoDB; and optionally writes to the DynamoDB cache and Redis (when \texttt{REDIS\_URL} is set). The consumer is packaged with the shared \texttt{ocr-process.js} and \texttt{ocr-postprocess.js} and deployed via a dedicated deployment script that also creates the SQS event source mapping.
+
+\subsection{Front-End: Next.js Web Application}
+
+The front-end is implemented in TypeScript using the Next.js~16 App Router. Authentication is centralised in an \texttt{AuthProvider} that configures AWS Amplify with the Cognito User Pool ID and Client ID from environment variables. The provider exposes a React context with \texttt{user}, \texttt{loading}, \texttt{getIdToken}, \texttt{signIn}, \texttt{signOut}, \texttt{signUp}, and \texttt{updateUsername}. Protected routes (e.g., My Uploads, Settings, Vault) check \texttt{auth.user} and redirect to the dashboard or auth page when the user is not logged in; the sidebar hides links to these routes when the user is unauthenticated.
+
+The \textbf{Upload} page (\texttt{/dashboard/upload}) uses the synchronous OCR API: on file selection, it calls \texttt{extractTextFromImage(file, \{ getToken \})}, which performs \texttt{POST /ocr/base64} with the image as a data URL and the Cognito ID token in the \texttt{Authorization} header. The response is displayed in an \texttt{OCRResultCard} with options to copy text and navigate to the Translate page (with text passed via \texttt{sessionStorage}). The \textbf{Translate} page (\texttt{/dashboard/translate}) reads the optional text from \texttt{sessionStorage}, allows the user to select target languages, and calls the classmate's Text-to-Multiple-Languages API. Results are shown with copy buttons per language; when the user is logged in, previous translations are loaded from \texttt{localStorage} and displayed in a ``Previously converted texts'' section. The \textbf{AI Tools} page (\texttt{/dashboard/ai-tools}) accepts free text (or text brought from the upload flow), calls a public AI API for caption and tag generation, and allows saving selected captions to the vault (stored in \texttt{localStorage} as \texttt{vaultItems}). The \textbf{Find Images} page (\texttt{/dashboard/images}) uses the Unsplash API to search and browse photos; logged-in users can mark favourites (stored in \texttt{localStorage}) and use a ``Save to Vault'' button to add an image reference to \texttt{vaultItems} without uploading or running OCR. The \textbf{Vault} page (\texttt{/dashboard/vault}) lists items from \texttt{vaultItems} (captions, text, images) with search and filter; it is only accessible when logged in. The \textbf{My Uploads} page (\texttt{/dashboard/my-uploads}) calls \texttt{GET /ocr?list=mine} and \texttt{GET /users/me/s3-links} with the auth token and displays the user's OCR jobs and S3 links in cards.
+
+Client-side caching is used to improve perceived performance: \texttt{sessionStorage} caches OCR job results by \texttt{jobId} and passes text to the Translate page; \texttt{localStorage} holds translation history, vault items, and Unsplash favourites. A global \texttt{loading.tsx} in the dashboard layout shows a loading state during route transitions.
+
+%==============================================================================
+\section{Continuous Integration, Delivery and Deployment}
+%==============================================================================
+
+\subsection{CI Pipeline}
+
+Continuous integration is implemented with GitHub Actions. The workflow runs on push and pull request to the main branch. For the \textbf{web application}, the job checks out the repository, sets up Node.js (e.g., version 20 or 22), runs \texttt{npm ci} and \texttt{npm run build} in the \texttt{webapp/scalable} directory, and runs \texttt{npm run lint} (which invokes \texttt{next lint}) to enforce ESLint rules including accessibility (e.g., \texttt{alt} on images) and React hooks. For the \textbf{API}, a similar job runs \texttt{npm ci} and \texttt{npm run build} (if applicable) in the \texttt{api} or \texttt{api/lambda-code} directory. Failures in build or lint block the pipeline and provide early feedback.
+
+\textbf{SonarCloud} is integrated for static code analysis. A separate workflow (or job) runs the SonarCloud GitHub Action with the project key and organisation configured in \texttt{sonar-project.properties}. The analysis is run against the source code of the webapp and optionally the API; results are visible in the SonarCloud dashboard and can be used to track code quality and technical debt. Automatic analysis in SonarCloud is disabled so that analysis is driven only by CI, avoiding duplicate runs.
+
+\textbf{OWASP ZAP} (Zed Attack Proxy) is used for dynamic application security testing. The workflow starts the deployed web application URL (or a staging URL) and runs a ZAP scan; the resulting reports (HTML and JSON) are uploaded as workflow artifacts so that the team can review findings (e.g., potential XSS, CSRF, or misconfigurations). This complements the static analysis and helps ensure that the deployed front-end does not introduce obvious security issues.
+
+\subsection{CD and Infrastructure Automation}
+
+Deployment and infrastructure are automated with Node.js scripts using the AWS SDK (v2 for some services, v3 for others as in the Lambda code). The \textbf{API deployment} script (\texttt{api/deploy.js}) performs the following: (1) create or update an S3 bucket for uploaded images and configure CORS if needed; (2) create or update DynamoDB tables (\texttt{OCRJobs} with \texttt{ByUserId} GSI, \texttt{UserS3Links}, \texttt{OCRCache}) with appropriate key schemas and TTL; (3) create or update the SQS queue for the async OCR path; (4) create or update IAM roles for the API Lambda and the SQS consumer Lambda with least-privilege policies (DynamoDB, S3, SQS, Textract, and optional ElastiCache network access for the consumer); (5) package the Lambda code (zip with \texttt{node\_modules}) and create or update the API Lambda function and the consumer Lambda function with the correct handler, runtime (Node.js 20.x), environment variables (table names, bucket name, queue URL, Cognito IDs, cache table, optional \texttt{REDIS\_URL}); (6) create or update the API Gateway HTTP API and integrate it with the Lambda, and create an SQS event source mapping for the consumer. The script is idempotent where possible (e.g., describing existing tables and updating only if necessary).
+
+The \textbf{webapp deployment} script (\texttt{webapp/scalable/deploy.js}) performs: (1) run \texttt{npm run build} to produce the static export in \texttt{out/}; (2) sync the contents of \texttt{out/} to the S3 bucket used for the static site (using \texttt{aws s3 sync} or the SDK); (3) create or update the CloudFront distribution with the S3 bucket as origin, a default cache behaviour with appropriate \texttt{DefaultTTL} and \texttt{MaxTTL}, and a CloudFront Function that rewrites requests (e.g., \texttt{/dashboard/upload} to \texttt{/dashboard/upload.html}); (4) create a CloudFront invalidation for \texttt{/*} (or key paths) and optionally wait for the invalidation to complete so that the latest UI is served. A separate script (\texttt{deploy-distribution.js}) can update only the CloudFront distribution and invalidation if the S3 content is updated by another process. All of this ensures that the backend and front-end can be deployed repeatedly and consistently without manual steps in the AWS console.
+
+%==============================================================================
+\section{Conclusions and Reflection}
+%==============================================================================
+
+This project set out to deliver a cloud application that integrates and consumes multiple web services while exposing a scalable backend implemented and deployed on a public cloud. The delivered solution meets these goals: the front-end composes the author's OCR API, a classmate's Text-to-Multiple-Languages API, the public Unsplash API, and a public AI text API, plus user-scoped listing endpoints; the backend is implemented as a serverless REST API with queue-based asynchronous processing, caching, and per-user isolation via Cognito and DynamoDB; and the entire pipeline is built, analysed, and deployed via GitHub Actions and AWS SDK scripts.
+
+A critical finding is that \textbf{perceived performance} is often dominated by client-side behaviour and API usage patterns rather than by the raw hosting choice. During development, users reported that the application felt slow; the initial instinct might have been to move from serverless to EC2 or to add more backend resources. Investigation showed that the main contributors were: (1) unnecessary or heavy API calls on initial page load (e.g., listing jobs and S3 links on the dashboard even when the user had not yet navigated to My Uploads); (2) synchronous polling in the browser when the async SQS path was used, leading to long waits and timeout messages; and (3) lack of client-side caching for OCR results and translation history. Addressing these---by deferring non-critical API calls, switching the upload flow to the synchronous API path, and introducing \texttt{sessionStorage}/\texttt{localStorage} caches and a global loading state---improved the experience without changing the underlying infrastructure. This underscores the importance of measuring and optimising the full stack before scaling out the backend.
+
+A second finding is that \textbf{queues and caches} are essential for scalable AI-style workloads. The OCR pipeline (Textract and Tesseract) is CPU- and time-intensive; handling every request synchronously in a single Lambda would lead to timeouts and poor latency under load. By offering an asynchronous path via SQS and a consumer Lambda, the system can absorb bursts and scale the number of workers with queue depth. The content-addressed cache (DynamoDB and optional Redis) reduces redundant OCR for identical or near-identical images, which is common when users retry or when the same asset is processed multiple times. These patterns are transferable to other document or media processing pipelines in the cloud.
+
+A third finding concerns \textbf{security and DevOps}. Correct CORS configuration was non-trivial when the front-end was served from CloudFront (a different origin than the API Gateway URL). Relying on API Gateway's default CORS led to failures when the browser sent credentials; the solution was to disable CORS at the gateway and handle all CORS headers in the Lambda (reflecting \texttt{Origin} and setting \texttt{Access-Control-Allow-Credentials: true}). Integrating SonarCloud and OWASP ZAP into the pipeline from the start helped catch quality and security issues before they reached production. Future work could add dependency scanning (e.g., \texttt{npm audit}) and secret detection in the repository.
+
+Finally, \textbf{reuse} of components from prior modules (e.g., OCR logic, deployment patterns) accelerated development but required care: the reused code had to be refactored for the new architecture (e.g., splitting OCR into a shared module for both the API and the consumer), and all reuse was documented in the report and code comments to satisfy academic integrity requirements.
+
+In summary, the project successfully demonstrates the design and implementation of a scalable, multi-service cloud application on AWS, with a serverless backend, a modern static front-end, and automated CI/CD. The main lessons are the value of client-side and backend caching, the role of queues in decoupling and scaling heavy work, and the need to integrate security and quality tooling early in the development process.
+
+%==============================================================================
+\section*{References}
+%==============================================================================
+
+\begin{thebibliography}{00}
+\bibitem{aws-lambda} Amazon Web Services, ``Serverless Architectures with AWS Lambda,'' AWS Whitepaper, 2023.
+\bibitem{eip} G. Hohpe and B. Woolf, \textit{Enterprise Integration Patterns: Designing, Building, and Deploying Messaging Solutions}. Addison-Wesley, 2003.
+\bibitem{cognito} Amazon Web Services, ``Amazon Cognito Developer Guide,'' 2025. [Online]. Available: https://docs.aws.amazon.com/cognito/latest/developerguide/
+\bibitem{sonar} SonarSource, ``SonarCloud GitHub Action,'' 2025. [Online]. Available: https://docs.sonarcloud.io/advanced-setup/ci-based-analysis/github-actions/
+\bibitem{nextjs} Vercel, ``Next.js Documentation,'' 2025. [Online]. Available: https://nextjs.org/docs
+\bibitem{s3} Amazon Web Services, ``Amazon S3 Developer Guide,'' 2025. [Online]. Available: https://docs.aws.amazon.com/AmazonS3/latest/dev/
+\bibitem{unsplash} Unsplash, ``Unsplash API Documentation,'' 2025. [Online]. Available: https://unsplash.com/documentation
+\bibitem{openai} OpenAI, ``API Reference,'' 2025. [Online]. Available: https://platform.openai.com/docs/api-reference
+\end{thebibliography}
+
+\end{document}

@@ -8,6 +8,9 @@ out/
 
 # Deploy artifacts
 .last_deploy_hash
+lambda-webapp-serve.zip
+lambda-webapp-serve/node_modules/
+amplify-deploy.zip
 
 # Uploads and temp
 *.tmp

@@ -98,6 +98,7 @@ jobs:
           npm run build
 
       - name: Prepare static for ZAP
+        working-directory: .
         run: |
           mkdir -p zap-static zap-reports
           if [ -d webapp/scalable/out ]; then
@@ -118,10 +119,12 @@ jobs:
           docker ps
 
       - name: Run OWASP ZAP baseline
+        working-directory: .
         run: |
           docker run --rm \
             --network zapnet \
             -v "${{ github.workspace }}/zap-reports:/zap/wrk:rw" \
+            -w /zap/wrk \
             -u root \
             owasp/zap2docker-stable \
             zap-baseline.py \
@@ -135,6 +138,11 @@ jobs:
       - name: Stop web server
         if: always()
         run: docker rm -f webapp 2>/dev/null || true
+
+      - name: List ZAP reports
+        if: always()
+        working-directory: .
+        run: ls -la zap-reports/ 2>/dev/null || echo "zap-reports not found or empty"
 
       - name: Upload ZAP reports (all in one artifact)
         uses: actions/upload-artifact@v4

@@ -111,7 +111,7 @@ export function UploadCard({ onFileSelect, isLoading = false, selectedFile, onCl
         </div>
         <div className="text-center space-y-1">
           <h3 className="font-bold text-lg">
-            {isLoading ? 'Uploading...' : 'Drop your image here'}
+            {isLoading ? 'Extracting text...' : 'Drop your image here'}
           </h3>
           <p className="text-sm text-muted-foreground">
             or click to browse from your computer
@@ -130,7 +130,7 @@ export function UploadCard({ onFileSelect, isLoading = false, selectedFile, onCl
           disabled={isLoading}
           className="px-6 py-2 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors disabled:opacity-50 font-medium"
         >
-          {isLoading ? 'Processing...' : 'Select Image'}
+          {isLoading ? 'Extracting...' : 'Select Image'}
         </button>
       </div>
     </GlassCard>
