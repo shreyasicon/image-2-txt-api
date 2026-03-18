@@ -144,12 +144,27 @@ jobs:
         working-directory: .
         run: ls -la zap-reports/ 2>/dev/null || echo "zap-reports not found or empty"
 
-      - name: Upload ZAP reports (all in one artifact)
-        uses: actions/upload-artifact@v4
+      - name: Ensure ZAP report exists for summary
         if: always()
-        with:
-          name: webapp-reports-zap
-          path: zap-reports/
-          retention-days: 30
-          if-no-files-found: warn
+        working-directory: .
+        run: |
+          if [ ! -f zap-reports/zap-report.html ]; then
+            mkdir -p zap-reports
+            echo '<!DOCTYPE html><html><head><title>ZAP Report</title></head><body><h1>ZAP did not produce a report</h1><p>Check the "Run OWASP ZAP baseline" step logs. The scan may have failed to connect or exited before writing.</p></body></html>' > zap-reports/zap-report.html
+          fi
+
+      - name: Add ZAP report to job summary
+        if: always()
+        working-directory: .
+        run: |
+          echo "## ZAP Security Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f zap-reports/zap-report.html ]; then
+            echo "<details open><summary>View report (expand to see HTML)</summary>" >> $GITHUB_STEP_SUMMARY
+            # GitHub job summary can render HTML; cap size to avoid truncation (~1MB limit)
+            head -c 900000 zap-reports/zap-report.html >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No report was generated." >> $GITHUB_STEP_SUMMARY
+          fi
 

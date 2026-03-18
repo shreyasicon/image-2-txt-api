@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { GlassCard } from '@/components/glass-card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/components/auth-provider';
+import { hasOpenAIKey } from '@/lib/api';
 import { Github, ExternalLink, User } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -109,10 +110,13 @@ export default function SettingsPage() {
             <div className="space-y-2">
               <label className="block text-sm font-medium">OpenAI API Key</label>
               <p className="text-xs text-muted-foreground mb-2">
-                Set your OpenAI API key via environment variables for caption and tag generation.
+                Set your OpenAI API key via <code className="px-1 rounded bg-muted text-foreground">.env.local</code> for caption and tag generation. Restart the dev server after changing.
               </p>
-              <div className="p-3 bg-background/50 rounded-lg border border-border/50">
+              <div className="p-3 bg-background/50 rounded-lg border border-border/50 flex items-center justify-between gap-2">
                 <code className="text-xs text-muted-foreground">NEXT_PUBLIC_OPENAI_API_KEY</code>
+                <span className={`text-xs font-medium px-2 py-1 rounded ${hasOpenAIKey() ? 'bg-green-500/20 text-green-600 dark:text-green-400' : 'bg-amber-500/20 text-amber-600 dark:text-amber-400'}`}>
+                  {hasOpenAIKey() ? 'Configured' : 'Not set'}
+                </span>
               </div>
             </div>
 

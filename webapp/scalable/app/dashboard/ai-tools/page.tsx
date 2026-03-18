@@ -6,7 +6,7 @@ import { GlassCard } from '@/components/glass-card';
 import { GlowButton } from '@/components/glow-button';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { CaptionCard } from '@/components/caption-card';
-import { generateCaptions, generateTags, enhanceContent } from '@/lib/api';
+import { generateCaptions, generateTags, enhanceContent, hasOpenAIKey } from '@/lib/api';
 import { AlertCircle, RefreshCw, KeyRound } from 'lucide-react';
 
 type Tone = 'professional' | 'creative' | 'viral';
@@ -152,7 +152,9 @@ export default function AIToolsPage() {
             <div>
               <h3 className="font-bold text-foreground">OpenAI API key</h3>
               <p className="text-sm text-muted-foreground">
-                For captions, tags, and enhancements to work, set your key in <code className="px-1.5 py-0.5 rounded bg-muted text-foreground text-xs">.env.local</code> as <code className="px-1.5 py-0.5 rounded bg-muted text-foreground text-xs">NEXT_PUBLIC_OPENAI_API_KEY=sk-...</code> (no quotes, no spaces). Restart the dev server after changing .env.local.
+                {hasOpenAIKey()
+                  ? 'Your OpenAI key is configured. Captions, tags, and enhancements will use it.'
+                  : 'Set your key in .env.local as NEXT_PUBLIC_OPENAI_API_KEY=sk-... (no quotes, no spaces). Restart the dev server after changing.'}
               </p>
             </div>
           </div>

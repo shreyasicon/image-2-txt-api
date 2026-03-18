@@ -515,6 +515,11 @@ function getOpenAIKey(): string | null {
   return k;
 }
 
+/** Whether an OpenAI API key is configured (safe to call from client; does not expose the key). */
+export function hasOpenAIKey(): boolean {
+  return getOpenAIKey() !== null;
+}
+
 export async function generateCaptions(
   text: string,
   tone: 'professional' | 'creative' | 'viral' = 'creative'
