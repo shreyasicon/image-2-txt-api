@@ -2,7 +2,7 @@
 
 ## Overview
 
-**Iconic Vault** is a production-ready, AI-powered personal content vault built with modern web technologies. It enables users to extract text from images, generate AI captions, auto-tag content, and store everything in a beautiful, dark-themed interface.
+**Iconic Vault** is a production-ready personal content vault built with modern web technologies. Users extract text from images (OCR API), translate text, discover images (Unsplash), and store content in a dark-themed interface with optional Cognito sign-in.
 
 ## Project Status: ✅ Complete
 
@@ -33,24 +33,13 @@ All major features have been implemented and the application is ready for deploy
 - Confidence score display
 - Copy-to-clipboard functionality
 
-✅ **AI Caption Generator**
-- Generate 5 captions per text
-- Three tone options (professional, creative, viral)
-- Copy individual captions
-- Save to vault
-- Regenerate functionality
+✅ **Translation**
+- Multi-language translation via integrated translation API
+- History in local storage when signed in
 
-✅ **AI Auto-Tagging**
-- Generate 15 relevant hashtags
-- Copy individual or all tags
-- Integration with OpenAI API
-
-✅ **Content Enhancement**
-- Rewrite in formal tone
-- Rewrite for viral potential
-- Summarize content
-- Expand with details
-- Translate to Spanish
+✅ **Find Images (Unsplash)**
+- Search and browse stock photos
+- Favourites and save references to vault
 
 ✅ **Vault Storage**
 - Store all generated content
@@ -112,8 +101,8 @@ All major features have been implemented and the application is ready for deploy
 - Proper cleanup and error handling
 
 ✅ **API Integration**
-- OpenAI GPT-4o-mini for AI features
 - AWS Lambda OCR for text extraction
+- Classmate translation API, Unsplash API
 - Error handling and fallbacks
 - Environment variable configuration
 - Async/await patterns
@@ -137,7 +126,6 @@ All major features have been implemented and the application is ready for deploy
 iconic-vault/
 ├── app/
 │   ├── dashboard/
-│   │   ├── ai-tools/page.tsx       (Caption, tags, enhance)
 │   │   ├── upload/page.tsx         (Image upload & OCR)
 │   │   ├── vault/page.tsx          (Content storage)
 │   │   ├── settings/page.tsx       (Configuration)
@@ -155,7 +143,6 @@ iconic-vault/
 │   ├── loading-spinner.tsx         (Loading indicator)
 │   ├── upload-card.tsx             (File upload)
 │   ├── ocr-result-card.tsx         (OCR results)
-│   ├── caption-card.tsx            (Caption display)
 │   ├── vault-card.tsx              (Vault item)
 │   └── ui/                         (shadcn components)
 │
@@ -177,7 +164,8 @@ iconic-vault/
 | `/` | Landing Page | Hero, features, CTA |
 | `/dashboard` | Dashboard | Overview, stats, quick actions |
 | `/dashboard/upload` | Upload Page | Image upload, OCR extraction |
-| `/dashboard/ai-tools` | AI Tools | Captions, tags, enhancement |
+| `/dashboard/translate` | Translate | Multi-language translation |
+| `/dashboard/images` | Find Images | Unsplash search |
 | `/dashboard/vault` | Vault | Store, search, manage content |
 | `/dashboard/settings` | Settings | Configuration, preferences |
 
@@ -189,20 +177,19 @@ iconic-vault/
 - **Input**: Multipart form data with `image` field
 - **Output**: JSON with `text` and `confidence`
 
-### OpenAI API
-- **Model**: `gpt-4o-mini`
-- **Used For**: 
-  - Caption generation (5 captions)
-  - Tag generation (15 hashtags)
-  - Content enhancement (5 types)
+### Translation & Unsplash
+
+- **Translation**: Classmate Text-to-Multiple-Languages API (base URL via `NEXT_PUBLIC_TRANSLATE_API_BASE`).
+- **Unsplash**: Search API (`NEXT_PUBLIC_UNSPLASH_ACCESS_KEY` if used).
 
 ## Environment Variables
 
 ```env
-NEXT_PUBLIC_OPENAI_API_KEY=sk-proj-xxxxx...
+NEXT_PUBLIC_OCR_API_BASE=https://...
+NEXT_PUBLIC_COGNITO_USER_POOL_ID=us-east-1_xxxxx
+NEXT_PUBLIC_COGNITO_CLIENT_ID=xxxxxxxxxxxx
+NEXT_PUBLIC_AWS_REGION=us-east-1
 ```
-
-Get from: https://platform.openai.com/api-keys
 
 ## How to Run
 
@@ -210,8 +197,7 @@ Get from: https://platform.openai.com/api-keys
 # 1. Install dependencies
 pnpm install
 
-# 2. Create .env.local with your OpenAI key
-echo "NEXT_PUBLIC_OPENAI_API_KEY=your_key" > .env.local
+# 2. Optional: create .env.local (see above)
 
 # 3. Run development server
 pnpm dev
@@ -231,20 +217,15 @@ pnpm dev
 
 ## Performance Metrics
 
-- **OCR Processing**: 2-5 seconds per image
-- **Caption Generation**: 3-7 seconds (5 captions)
-- **Tag Generation**: 2-4 seconds (15 tags)
-- **Page Load**: < 2 seconds
-- **Component Render**: < 100ms
+- **OCR Processing**: Depends on API and image size (often a few seconds)
+- **Page Load**: Target &lt; 2 seconds on good networks
 
 ## Security & Privacy
 
-- ✅ All data stored locally in browser
-- ✅ No server-side storage
-- ✅ No tracking or analytics
-- ✅ CORS-safe image handling
-- ✅ Input validation
-- ✅ Safe API key usage
+- ✅ Vault and preferences can use browser LocalStorage
+- ✅ OCR and user jobs use authenticated API when signed in (Cognito JWT)
+- ✅ CORS configured on the Lambda API
+- ✅ Input validation on uploads
 
 ## Browser Support
 
@@ -270,7 +251,7 @@ The application is production-ready and can be deployed to:
 git push origin main
 
 # 2. Connect to Vercel at vercel.com
-# 3. Add environment variable: NEXT_PUBLIC_OPENAI_API_KEY
+# 3. Add environment variables: OCR base URL, Cognito IDs, region
 # 4. Deploy with one click
 ```
 

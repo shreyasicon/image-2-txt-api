@@ -27,7 +27,7 @@ export default function VaultPage() {
   const [s3Error, setS3Error] = useState('');
   const [s3Loading, setS3Loading] = useState(false);
   const [extractedImages, setExtractedImages] = useState<{ id: string; jobId: string; filename: string; date: string; dataUrl: string }[]>([]);
-  const [filter, setFilter] = useState<'all' | 'caption' | 'text' | 'image'>('all');
+  const [filter, setFilter] = useState<'all' | 'caption' | 'text'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [redirectFallback, setRedirectFallback] = useState(false);
@@ -175,12 +175,21 @@ export default function VaultPage() {
     reader.readAsDataURL(addImageFile);
   };
 
-  const filteredItems = items.filter((item) => {
+  /** Saved image entries from vault (e.g. Unsplash / Add New Content), not the Upload extractedImages list */
+  const localVaultImages = items.filter((item) => item.type === 'image');
+
+  /** Captions & text in the grid below — images show only under "Your uploaded images" */
+  const nonImageVaultItems = items.filter((item) => item.type !== 'image');
+
+  const filteredItems = nonImageVaultItems.filter((item) => {
     const matchesFilter = filter === 'all' || item.type === filter;
     const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          item.content.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesFilter && matchesSearch;
   });
+
+  const hasAnyUploadedImage =
+    s3Items.length > 0 || extractedImages.length > 0 || localVaultImages.length > 0;
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
@@ -192,7 +201,7 @@ export default function VaultPage() {
               Your <span className="neon-text">Vault</span>
             </h1>
             <p className="text-muted-foreground text-lg">
-              Store, manage, and organize your content
+              Store, manage and organize your content
             </p>
           </div>
           <div className="text-right">
@@ -201,61 +210,21 @@ export default function VaultPage() {
           </div>
         </div>
 
-        {/* Extracted images (from Upload page, stored in vault) */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <ImageIcon className="w-6 h-6 text-primary" aria-hidden />
-            Extracted images
-          </h2>
-          {extractedImages.length > 0 ? (
-            <ul className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {extractedImages.map((img) => (
-                <li key={img.id}>
-                  <GlassCard className="overflow-hidden p-0 group relative">
-                    <div className="aspect-square relative bg-muted">
-                      <img
-                        src={img.dataUrl}
-                        alt={img.filename}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="p-3 flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate" title={img.filename}>{img.filename}</p>
-                        <p className="text-xs text-muted-foreground">{img.date}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveExtractedImage(img.id)}
-                        className="p-2 rounded-lg border border-destructive/50 text-destructive hover:bg-destructive/10 transition-colors flex-shrink-0"
-                        title="Remove from vault"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </GlassCard>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <GlassCard className="py-6 text-center text-muted-foreground">
-              <p>Images you extract on the Upload page will appear here.</p>
-            </GlassCard>
-          )}
-        </div>
-
-        {/* Your uploaded images (S3) */}
+        {/* Uploaded / extracted images (Upload page, S3, and saved image vault items) */}
         <div className="space-y-4">
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <ImageIcon className="w-6 h-6 text-primary" aria-hidden />
             Your uploaded images
           </h2>
-          {s3Loading && s3Items.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Thumbnails from the Upload page, images stored on your account (S3), and other images you saved to the vault.
+          </p>
+          {s3Loading && !hasAnyUploadedImage ? (
             <GlassCard className="py-8 text-center text-muted-foreground">Loading your uploaded images…</GlassCard>
-          ) : s3Items.length > 0 ? (
+          ) : hasAnyUploadedImage ? (
             <ul className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {s3Items.map((link) => (
-                <li key={link.jobId}>
+                <li key={`s3-${link.jobId}`}>
                   <GlassCard className="overflow-hidden p-0">
                     <div className="aspect-square relative bg-muted">
                       {link.previewUrl ? (
@@ -271,6 +240,7 @@ export default function VaultPage() {
                       )}
                     </div>
                     <div className="p-3">
+                      <p className="text-xs text-muted-foreground mb-0.5">Cloud upload</p>
                       <p className="text-sm font-medium truncate" title={link.filename}>{link.filename || link.jobId}</p>
                       {link.createdAt && (
                         <p className="text-xs text-muted-foreground mt-1">{new Date(link.createdAt).toLocaleString()}</p>
@@ -279,11 +249,70 @@ export default function VaultPage() {
                   </GlassCard>
                 </li>
               ))}
+              {extractedImages.map((img) => (
+                <li key={`ex-${img.id}`}>
+                  <GlassCard className="overflow-hidden p-0 group relative">
+                    <div className="aspect-square relative bg-muted">
+                      <img
+                        src={img.dataUrl}
+                        alt={img.filename}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="p-3 flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-xs text-muted-foreground mb-0.5">From Upload</p>
+                        <p className="text-sm font-medium truncate" title={img.filename}>{img.filename}</p>
+                        <p className="text-xs text-muted-foreground">{img.date}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveExtractedImage(img.id)}
+                        className="p-2 rounded-lg border border-destructive/50 text-destructive hover:bg-destructive/10 transition-colors flex-shrink-0"
+                        title="Remove from vault"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </GlassCard>
+                </li>
+              ))}
+              {localVaultImages.map((item) => (
+                <li key={`lv-${item.id}`}>
+                  <GlassCard className="overflow-hidden p-0 group relative">
+                    <div className="aspect-square relative bg-muted">
+                      <img
+                        src={item.content}
+                        alt={item.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="p-3 flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-xs text-muted-foreground mb-0.5">Saved to vault</p>
+                        <p className="text-sm font-medium truncate" title={item.title}>{item.title}</p>
+                        <p className="text-xs text-muted-foreground">{item.date}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(item.id)}
+                        className="p-2 rounded-lg border border-destructive/50 text-destructive hover:bg-destructive/10 transition-colors flex-shrink-0"
+                        title="Remove from vault"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </GlassCard>
+                </li>
+              ))}
             </ul>
-          ) : !s3Loading && (
-            <GlassCard className="py-6 text-center text-muted-foreground">
-              <p>Images you upload via the Upload page will appear here.</p>
-            </GlassCard>
+          ) : (
+            !s3Loading && (
+              <GlassCard className="py-6 text-center text-muted-foreground space-y-2">
+                <p>Images you upload via the Upload page will appear here.</p>
+                <p className="text-sm">Cloud uploads (when signed in) and images you add with &quot;Add New Content&quot; show here too.</p>
+              </GlassCard>
+            )
           )}
         </div>
 
@@ -313,7 +342,6 @@ export default function VaultPage() {
                 <option value="all">All Items</option>
                 <option value="caption">Captions</option>
                 <option value="text">Text</option>
-                <option value="image">Images</option>
               </select>
             </div>
           </div>
@@ -379,7 +407,8 @@ export default function VaultPage() {
         {filteredItems.length > 0 ? (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Showing {filteredItems.length} of {items.length} items
+              Showing {filteredItems.length} of {nonImageVaultItems.length} items
+              {nonImageVaultItems.length > 0 ? ' (captions & text)' : ''}
             </p>
             <div className="grid gap-4">
               {filteredItems.map((item) => (
@@ -397,13 +426,15 @@ export default function VaultPage() {
               <Filter className="w-8 h-8 text-primary" />
             </div>
             <div>
-              <h3 className="text-xl font-bold mb-2">No content found</h3>
+              <h3 className="text-xl font-bold mb-2">
+                {nonImageVaultItems.length === 0 ? 'No captions or text yet' : 'No matching items'}
+              </h3>
               <p className="text-muted-foreground mb-6">
-                {items.length === 0
-                  ? 'Start by uploading an image or extracting text'
-                  : 'No items match your search or filter'}
+                {nonImageVaultItems.length === 0
+                  ? 'Save captions or text to the vault, or use Upload to extract text. Images are listed above.'
+                  : 'Try another search or filter. Images stay in the section above.'}
               </p>
-              {items.length === 0 ? (
+              {nonImageVaultItems.length === 0 ? (
                 <Link href="/dashboard/upload">
                   <GlowButton variant="primary">Upload Content</GlowButton>
                 </Link>

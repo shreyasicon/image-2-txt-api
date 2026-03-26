@@ -11,22 +11,22 @@ export default function LandingPage() {
     {
       icon: Image,
       title: 'Image to Text',
-      description: 'Extract text from images using advanced OCR technology',
+      description: 'Extract text from images using written API',
     },
     {
       icon: Zap,
-      title: 'AI Captions',
-      description: 'Generate professional, creative, or viral captions instantly',
+      title: 'Translation',
+      description: 'Translate text to your language',
     },
     {
       icon: Tag,
-      title: 'Auto-Tagging',
-      description: 'Get relevant hashtags automatically generated for your content',
+      title: 'Find Images',
+      description: 'Find images related to your content',
     },
     {
       icon: Vault,
       title: 'Vault Storage',
-      description: 'Store, organize, and manage all your content in one place',
+      description: 'Store, organize and manage all your content in one place',
     },
   ];
 
@@ -68,7 +68,7 @@ export default function LandingPage() {
                 <span className="block neon-text">Elevate</span>
               </h1>
               <p className="text-xl text-muted-foreground max-w-xl leading-relaxed">
-                Transform your content with AI-powered extraction, captioning, and auto-tagging. Your personal vault for unlimited creativity.
+                Transform your content with API powered extraction, translation and image finding. Your personal vault for unlimited creativity.
               </p>
             </div>
 
@@ -78,17 +78,14 @@ export default function LandingPage() {
                   Enter Vault <ArrowRight className="ml-2 w-4 h-4" />
                 </GlowButton>
               </Link>
-              <GlowButton variant="outline" size="lg">
-                Learn More
-              </GlowButton>
             </div>
 
             {/* Stats */}
             <div className="grid grid-cols-3 gap-4 pt-8">
               {[
-                { label: 'AI Models', value: '3+' },
+                { label: 'APIs', value: '3+' },
                 { label: 'Content Types', value: '∞' },
-                { label: 'Processing Speed', value: 'Real-time' },
+                { label: 'Processing Speed', value: 'Real time' },
               ].map((stat) => (
                 <div key={stat.label} className="space-y-2">
                   <p className="text-2xl font-bold text-primary">{stat.value}</p>
@@ -158,7 +155,7 @@ export default function LandingPage() {
               Powerful <span className="neon-text">Features</span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Everything you need to extract, enhance, and organize your creative content
+              Everything you need to extract, enhance and organize your creative content
             </p>
           </div>
 
@@ -189,7 +186,7 @@ export default function LandingPage() {
               Ready to Transform Your Content?
             </h2>
             <p className="text-lg text-muted-foreground">
-              Start creating, storing and elevating your ideas today
+              Start creating, storing and elevating your content today
             </p>
           </div>
           <Link href="/dashboard">
@@ -206,7 +203,7 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
             <Logo />
             <p className="text-sm text-muted-foreground">
-              © 2024 Iconic Vault. All rights reserved.
+              © 2026 Iconic Vault. All rights reserved.
             </p>
           </div>
         </div>

@@ -1,3 +1,6 @@
+# Git-connected Amplify: set these in App settings → Environment variables:
+#   NEXT_PUBLIC_COGNITO_USER_POOL_ID, NEXT_PUBLIC_COGNITO_CLIENT_ID, NEXT_PUBLIC_AWS_REGION
+# Optional: NEXT_PUBLIC_OCR_API_BASE, NEXT_PUBLIC_TRANSLATE_API_BASE, NEXT_PUBLIC_UNSPLASH_ACCESS_KEY
 version: 1
 frontend:
   phases:

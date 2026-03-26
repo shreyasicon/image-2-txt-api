@@ -99,8 +99,10 @@ export default function DashboardPage() {
               Welcome to Your <span className="neon-text">Vault</span>
             </h1>
             <p className="text-muted-foreground text-lg">
-              Create, store, and elevate your content with AI
+              Create, store and elevate your content with API powered extraction, translation and image finding.
+      
             </p>
+            <p className="text-muted-foreground text-lg">Login to enjoy all features.</p>
           </div>
         </div>
 

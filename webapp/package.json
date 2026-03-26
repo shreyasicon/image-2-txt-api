@@ -1,12 +1,15 @@
 {
   "name": "webapp-root",
   "private": true,
-  "description": "Run scripts from webapp/scalable. Always cd into scalable first so tailwindcss resolves from the right node_modules.",
+  "description": "Next.js app lives in webapp/scalable. Use npm run dev from this folder OR cd scalable && npm run dev. Do not run next dev from webapp/ alone — CSS will break.",
   "scripts": {
-    "dev": "cd scalable && npm run dev",
-    "build": "cd scalable && npm run build",
-    "start": "cd scalable && npm run start",
-    "lint": "cd scalable && npm run lint",
-    "deploy": "cd scalable && npm run deploy"
+    "postinstall": "npm install --prefix scalable",
+    "dev": "npm run dev --prefix scalable",
+    "build": "npm run build --prefix scalable",
+    "start": "npm run start --prefix scalable",
+    "lint": "npm run lint --prefix scalable",
+    "deploy": "npm run deploy --prefix scalable",
+    "deploy:lambda": "npm run deploy:lambda --prefix scalable",
+    "deploy:amplify": "npm run deploy:amplify --prefix scalable"
   }
 }

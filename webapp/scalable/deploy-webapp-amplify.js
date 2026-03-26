@@ -210,7 +210,15 @@ function getAmplifyAppUrl(appId) {
       ...process.env,
       NEXT_PUBLIC_COGNITO_USER_POOL_ID: userPoolId,
       NEXT_PUBLIC_COGNITO_CLIENT_ID: clientId,
-      NEXT_PUBLIC_AWS_REGION: region
+      NEXT_PUBLIC_AWS_REGION: region,
+      // Optional overrides from your shell before deploy (OCR, translate, Unsplash):
+      ...(process.env.NEXT_PUBLIC_OCR_API_BASE && { NEXT_PUBLIC_OCR_API_BASE: process.env.NEXT_PUBLIC_OCR_API_BASE }),
+      ...(process.env.NEXT_PUBLIC_TRANSLATE_API_BASE && {
+        NEXT_PUBLIC_TRANSLATE_API_BASE: process.env.NEXT_PUBLIC_TRANSLATE_API_BASE
+      }),
+      ...(process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY && {
+        NEXT_PUBLIC_UNSPLASH_ACCESS_KEY: process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY
+      })
     };
     execSync("npm run build", { cwd: __dirname, stdio: "inherit", env: buildEnv });
     if (!fs.existsSync(OUT_DIR)) {

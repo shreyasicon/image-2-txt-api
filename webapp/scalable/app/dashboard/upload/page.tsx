@@ -98,7 +98,7 @@ export default function UploadPage() {
             Upload & <span className="neon-text">Extract</span>
           </h1>
           <p className="text-muted-foreground text-lg">
-            Upload an image and extract text using advanced OCR technology
+            Upload an image and extract text using written API
           </p>
         </div>
 
@@ -216,17 +216,14 @@ export default function UploadPage() {
                 <span className="text-primary mt-0.5">•</span>
                 <span>Use clear, high-contrast images for better accuracy</span>
               </li>
+              
               <li className="flex items-start gap-2">
                 <span className="text-primary mt-0.5">•</span>
-                <span>Ensure text is straight and not distorted</span>
+                <span>Supported formats: JPG, PNG, JPEG</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-primary mt-0.5">•</span>
-                <span>Supported formats: JPG, PNG, WebP, GIF</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary mt-0.5">•</span>
-                <span>Maximum file size: 20MB</span>
+                <span>Maximum file size: 10MB</span>
               </li>
             </ul>
           </GlassCard>

@@ -1,183 +1,63 @@
 # Iconic Vault - Quick Start Guide
 
-Get up and running in 5 minutes!
+Get up and running in a few minutes.
 
-## 1. Install Dependencies (1 min)
+## 1. Install Dependencies
 
 ```bash
 pnpm install
+# or npm install
 ```
 
-## 2. Configure OpenAI API (2 min)
+## 2. Environment (optional)
 
-1. Get your API key: https://platform.openai.com/api-keys
-2. Create `.env.local` in project root:
+Create `.env.local` in `webapp/scalable` if you need a custom API or Cognito:
 
 ```env
-NEXT_PUBLIC_OPENAI_API_KEY=your_key_here
+NEXT_PUBLIC_OCR_API_BASE=https://your-api.execute-api.us-east-1.amazonaws.com/prod
+NEXT_PUBLIC_COGNITO_USER_POOL_ID=us-east-1_xxxxx
+NEXT_PUBLIC_COGNITO_CLIENT_ID=xxxxxxxxxxxx
+NEXT_PUBLIC_AWS_REGION=us-east-1
 ```
 
-3. Replace `your_key_here` with your actual OpenAI API key
+Restart the dev server after changing `.env.local`.
 
-## 3. Start Development Server (30 sec)
+## 3. Start Development Server
 
 ```bash
 pnpm dev
+# or npm run dev
 ```
 
-## 4. Open in Browser (30 sec)
+## 4. Open in Browser
 
 Visit http://localhost:3000
 
-## What You Can Do Now
+## What You Can Do
 
-### Landing Page (Home)
-- Beautiful hero section with logo
-- Feature highlights
-- Call-to-action buttons
-
-### Dashboard
-- Overview of your vault
-- Quick stats and activity
-- Navigation to all features
-
-### Upload Page
-- Drag & drop image upload
-- Text extraction via OCR
-- Confidence score display
-
-### AI Tools
-- **Captions**: Generate 5 social media captions (choose tone: professional, creative, viral)
-- **Tags**: Auto-generate 15 relevant hashtags
-- **Enhance**: Rewrite, summarize, expand, or translate content
-
-### Vault
-- Store your generated content
-- Search by title or content
-- Filter by type
-- Copy to clipboard
-- Delete items
-
-### Settings
-- API configuration info
-- Preferences
-- Data management
-- About page
+- **Landing** — Hero, features, sign-in
+- **Dashboard** — Overview, quick actions
+- **Upload** — Image upload and OCR
+- **Translate** — Multi-language translation
+- **Find Images** — Unsplash search
+- **Vault** — Saved content (when signed in)
+- **Settings** — Preferences and about
 
 ## Example Workflow
 
-1. **Upload** → Click "Upload" in sidebar
-2. **Extract** → Drop an image with text
-3. **Generate** → Go to "AI Tools"
-4. **Choose** → Select caption tone or generate tags
-5. **Copy** → Click copy button
-6. **Store** → Click save to add to Vault
-7. **Manage** → View all in Vault page
-
-## Key Features
-
-✨ **AI-Powered**
-- OpenAI GPT-4o-mini for content generation
-- Advanced OCR for text extraction
-
-🎨 **Beautiful UI**
-- Dark theme with neon accents
-- Glassmorphism design
-- Smooth animations
-- Fully responsive
-
-🔒 **Privacy First**
-- All data stored locally in browser
-- No server uploads
-- No tracking or analytics
-
-⚡ **Fast & Lightweight**
-- Next.js 16 with App Router
-- Tailwind CSS for styling
-- Optimized components
+1. **Upload** — Sidebar → Upload, drop an image with text
+2. **Copy / use text** — Copy extracted text or open Translate
+3. **Vault** — Save items you care about (when signed in)
 
 ## Troubleshooting
 
-### Error: "OpenAI API key not configured"
-- Check `.env.local` file exists
-- Verify key is pasted correctly
-- Restart dev server: `pnpm dev`
-
 ### OCR not working
-- Ensure image is clear and readable
-- Try a different image format (JPG, PNG)
-- Check file size (max 20MB)
 
-### Captions not generating
-- Verify OpenAI API key is valid
-- Ensure text is not empty
-- Wait 2-3 seconds (API calls are slow)
+- Use a clear, readable image (JPG, PNG)
+- Check payload size limits for your API
+- Confirm `NEXT_PUBLIC_OCR_API_BASE` if not using the default
 
 ### Data not saving
-- Check LocalStorage is enabled in browser
-- Try clearing browser cache
-- Refresh the page
 
-## Environment Variables Explained
-
-```env
-NEXT_PUBLIC_OPENAI_API_KEY
-├─ Used for: Caption, tag, and content enhancement
-├─ Type: Public (used in browser)
-├─ Get from: https://platform.openai.com
-├─ Required: Yes
-└─ Format: sk-proj-xxxxx...
-```
-
-The `NEXT_PUBLIC_` prefix means this variable is exposed to the browser (necessary for client-side API calls).
-
-## Next Steps
-
-1. **Customize Colors** → Edit `app/globals.css`
-2. **Add Database** → Integrate Supabase or Neon for persistent storage
-3. **Deploy** → Push to GitHub and deploy via Vercel
-4. **Add Features** → Build on the existing component structure
-
-## Commands Reference
-
-```bash
-# Development
-pnpm dev              # Start dev server
-pnpm build            # Build for production
-pnpm start            # Start production server
-pnpm lint             # Run ESLint
-
-# Other
-pnpm install          # Install dependencies
-pnpm update           # Update dependencies
-```
-
-## Need Help?
-
-- Check README.md for detailed documentation
-- Review component code in `/components`
-- Check API integration in `/lib/api.ts`
-- Inspect browser console for errors
-
-## Performance Notes
-
-- **OCR Processing**: 2-5 seconds per image
-- **Caption Generation**: 3-7 seconds
-- **Tag Generation**: 2-4 seconds
-- **Storage**: Limited by browser (typically 5-10MB)
-
-Clean up old vault items to maintain performance.
-
-## Tips & Tricks
-
-1. **Batch Operations** - Generate multiple content types from same text
-2. **Tone Selection** - Experiment with different caption tones
-3. **Copy Shortcuts** - Hover over items to see copy button
-4. **Search & Filter** - Use vault search for quick access
-5. **Regenerate** - Click refresh icon to get new variations
-
----
-
-Ready to transform your content workflow? Start uploading images now!
-
-**Iconic Vault** - Create. Store. Elevate.
+- Enable LocalStorage in the browser
+- Vault and some features require sign-in (Cognito)

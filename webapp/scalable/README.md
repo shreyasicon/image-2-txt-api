@@ -2,15 +2,14 @@
 
 **Create. Store. Elevate.**
 
-A production-ready AI-powered personal content vault built with Next.js. Extract text from images, generate captions, auto-tag content, and organize everything in one beautiful interface.
+A production-ready personal content vault built with Next.js. Extract text from images, translate, discover images, and organize everything in one interface.
 
 ## Features
 
-- **Image to Text Extraction** - Advanced OCR technology to extract text from images
-- **AI Caption Generation** - Generate professional, creative, or viral captions using OpenAI
-- **Auto-Tagging** - Automatically generate relevant hashtags for your content
-- **Personal Vault** - Store, organize, and manage all your content locally
-- **Content Enhancement** - Rewrite, summarize, expand, and translate your content
+- **Image to Text Extraction** - OCR via the custom AWS Lambda API
+- **Translation** - Multi-language translation via integrated translation API
+- **Find Images** - Search stock photos (Unsplash)
+- **Personal Vault** - Store, organize, and manage content locally and with your account
 - **Glassmorphism UI** - Modern dark-themed interface with neon accents and smooth animations
 - **Fully Responsive** - Optimized for desktop and mobile devices
 
@@ -22,16 +21,15 @@ A production-ready AI-powered personal content vault built with Next.js. Extract
 - **Language**: TypeScript
 - **Icons**: Lucide React
 - **Fonts**: Orbitron (headings), Geist (body)
-- **AI**: OpenAI API (GPT-4o-mini)
 - **OCR**: Custom AWS Lambda OCR API
+- **Auth**: AWS Amplify + Cognito
 - **Storage**: Browser LocalStorage (client-side)
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+ with pnpm
-- OpenAI API key
+- Node.js 18+ with npm or pnpm
 - Modern web browser
 
 ### Installation
@@ -49,16 +47,13 @@ pnpm install
 Create a `.env.local` file in the root directory:
 
 ```env
-NEXT_PUBLIC_OPENAI_API_KEY=your_openai_api_key_here
-# OCR API (optional; defaults to demo endpoint)
+# OCR API (optional; defaults to deployed demo endpoint)
 NEXT_PUBLIC_OCR_API_BASE=https://your-api.execute-api.us-east-1.amazonaws.com/prod
-# Cognito (optional; for Sign in and My Uploads – run API deploy.js to create the User Pool)
+# Cognito (for Sign in, My Uploads, Vault – e.g. from deploy-webapp-lambda.js or deploy.js)
 NEXT_PUBLIC_COGNITO_USER_POOL_ID=us-east-1_xxxxx
 NEXT_PUBLIC_COGNITO_CLIENT_ID=xxxxxxxxxxxx
 NEXT_PUBLIC_AWS_REGION=us-east-1
 ```
-
-Get your OpenAI API key from [platform.openai.com](https://platform.openai.com)
 
 3. **Run Development Server**
 
@@ -76,7 +71,6 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 /app
   /dashboard
     /upload          - Image upload & OCR extraction
-    /ai-tools        - Caption generation, tagging, content enhancement
     /vault           - Store and manage your content
     /settings        - Configuration and preferences
     layout.tsx       - Dashboard layout with sidebar
@@ -87,14 +81,13 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
   sidebar.tsx        - Navigation sidebar
   upload-card.tsx    - File upload component with drag-drop
   ocr-result-card.tsx - Display extracted text with confidence
-  caption-card.tsx   - Individual caption display card
   vault-card.tsx     - Vault item display card
   glass-card.tsx     - Reusable glass morphism card
   glow-button.tsx    - Custom button with glow effects
   loading-spinner.tsx - Animated loading indicator
 
 /lib
-  api.ts             - API integration (OCR, OpenAI)
+  api.ts             - API integration (OCR, translation, Unsplash)
   utils.ts           - Utility functions
 
 /app
@@ -113,14 +106,7 @@ Navigate to **Upload** page to:
 - View extraction confidence score
 - Copy extracted text
 
-### 2. Generate Content
-
-Go to **AI Tools** to:
-- **Captions**: Generate 5 captions in different tones (professional, creative, viral)
-- **Tags**: Auto-generate 15 relevant hashtags
-- **Enhance**: Rewrite, summarize, expand, or translate content
-
-### 3. Store & Organize
+### 2. Store & Organize
 
 Visit your **Vault** to:
 - View all stored content with preview
@@ -129,7 +115,7 @@ Visit your **Vault** to:
 - Copy content to clipboard
 - Delete items as needed
 
-### 4. Configure
+### 3. Configure
 
 Adjust **Settings** to:
 - Review API configuration
@@ -144,15 +130,6 @@ Adjust **Settings** to:
 **Endpoint:** `POST https://xkdvpogqt0.execute-api.us-east-1.amazonaws.com/prod/ocr`
 
 Requires multipart/form-data with field name `image`. Returns extracted text and confidence score.
-
-### OpenAI API
-
-**Model:** `gpt-4o-mini`
-
-Used for:
-- Caption generation with tone control
-- Hashtag generation
-- Content rewriting, summarization, expansion, and translation
 
 ## Data Storage
 
@@ -186,7 +163,9 @@ const orbitron = Orbitron({ subsets: ["latin"] });
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `NEXT_PUBLIC_OPENAI_API_KEY` | Yes | Your OpenAI API key |
+| `NEXT_PUBLIC_OCR_API_BASE` | No | OCR API base URL (defaults to deployed Lambda) |
+| `NEXT_PUBLIC_COGNITO_USER_POOL_ID` | For auth | Cognito User Pool ID |
+| `NEXT_PUBLIC_COGNITO_CLIENT_ID` | For auth | Cognito App Client ID |
 
 Note: `NEXT_PUBLIC_` prefix allows the variable to be used in the browser.
 
@@ -199,19 +178,10 @@ Note: `NEXT_PUBLIC_` prefix allows the variable to be used in the browser.
 
 ## Troubleshooting
 
-### "OpenAI API key not configured"
-- Ensure `NEXT_PUBLIC_OPENAI_API_KEY` is set in `.env.local`
-- Restart the dev server after adding the environment variable
-
 ### OCR extraction fails
 - Check image is in supported format (JPG, PNG, WebP, GIF)
 - Verify image file size is under 20MB
 - Ensure text in image is clearly visible
-
-### Captions/Tags not generating
-- Verify OpenAI API key is valid and has sufficient credits
-- Check that text is not empty before generating
-- Confirm no API rate limits are exceeded
 
 ### Data not persisting
 - Check browser's LocalStorage is not disabled
@@ -233,7 +203,7 @@ git push origin main
 Add environment variable in Vercel:
 1. Go to Project Settings
 2. Click Environment Variables
-3. Add `NEXT_PUBLIC_OPENAI_API_KEY`
+3. Add `NEXT_PUBLIC_OCR_API_BASE`, Cognito IDs, and `NEXT_PUBLIC_AWS_REGION` as needed
 
 ### Deploy to Other Platforms
 
@@ -288,7 +258,7 @@ Built with:
 - [React](https://react.dev)
 - [Tailwind CSS](https://tailwindcss.com)
 - [shadcn/ui](https://ui.shadcn.com)
-- [OpenAI API](https://openai.com)
+- [AWS Amplify](https://aws.amazon.com/amplify/)
 - [Lucide Icons](https://lucide.dev)
 
 ---

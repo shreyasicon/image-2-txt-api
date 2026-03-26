@@ -1,0 +1,56 @@
+﻿node.exe : npm warn Unknown user config "timeout". This will stop working in the next major version of npm.
+At C:\Program Files\nvm\nodejs\npx.ps1:16 char:5
++     & "$basedir/node$exe"  "$basedir/node_modules/npm/bin/npx-cli.js" ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm warn Unknow...version of npm.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+ RUN  v3.2.4 E:/NCi/Sem2/Scalable/Proj/Code/webapp/scalable
+
+ Γ£ô tests/app/dashboard-loading.test.tsx > DashboardLoading > shows loading state 70ms
+ Γ£ô tests/app/my-uploads-page.test.tsx > MyUploadsRedirectPage > shows redirect message 77ms
+ Γ£ô tests/app/settings-page.test.tsx > SettingsPage > redirects copy when not signed in 110ms
+ Γ£ô tests/app/settings-page.test.tsx > SettingsPage > shows settings for signed-in user 123ms
+ Γ£ô tests/app/dashboard-page.test.tsx > DashboardPage > shows login hint when guest 175ms
+ Γ£ô tests/app/landing.test.tsx > LandingPage > renders hero and CTA 485ms
+ Γ£ô tests/app/dashboard-page.test.tsx > DashboardPage > shows stats when signed in 77ms
+ Γ£ô tests/app/auth-page.test.tsx > AuthPage > shows loading 194ms
+ Γ£ô tests/app/auth-page.test.tsx > AuthPage > shows not configured 33ms
+ Γ£ô tests/app/auth-page.test.tsx > AuthPage > shows sign-in form when ready 312ms
+ Γ£ô tests/app/auth-page.test.tsx > AuthPage > shows redirecting when already signed in 8ms
+ Γ£ô tests/app/images-page.test.tsx > FindImagesPage > renders heading when Unsplash is mocked on 264ms
+ Γ£ô tests/components/glass-card.test.tsx > GlassCard > renders children 118ms
+ Γ£ô tests/components/auth-provider.test.tsx > AuthProvider > provides context when Cognito is not configured 134ms
+ Γ£ô tests/app/upload-page.test.tsx > UploadPage > runs OCR after file select 611ms
+ Γ£ô tests/components/glow-button.test.tsx > GlowButton > fires click 449ms
+ Γ£ô tests/app/translate-page.test.tsx > TranslatePage > renders and health check clears apiDown 232ms
+ Γ£ô tests/components/loading-spinner.test.tsx > LoadingSpinner > renders 112ms
+ Γ£ô tests/components/logo.test.tsx > Logo > shows brand text 181ms
+ Γ£ô tests/components/sidebar.test.tsx > Sidebar > shows log in when guest 226ms
+ Γ£ô tests/components/sidebar.test.tsx > Sidebar > shows log out when signed in 87ms
+ Γ£ô tests/components/theme-provider.test.tsx > ThemeProvider > renders children 182ms
+ Γ£ô tests/lib/amplify.test.ts > amplify config > reports not configured when pool ids missing 43ms
+ Γ£ô tests/lib/amplify.test.ts > amplify config > reports configured when both ids set 21ms
+ Γ£ô tests/components/upload-card.test.tsx > UploadCard > calls onFileSelect when selecting image 371ms
+ Γ£ô tests/components/upload-card.test.tsx > UploadCard > shows preview when file selected 34ms
+ Γ£ô tests/lib/api-base-url.test.ts > OCR API base URL from env > trims trailing slashes from NEXT_PUBLIC_OCR_API_BASE 12ms
+ Γ£ô tests/lib/api.test.ts > formatConfidence > normalizes 0ΓÇô1 and 0ΓÇô100 ranges 4ms
+ Γ£ô tests/lib/api.test.ts > getOcrJob and cache > returns cached completed job without fetch 5ms
+ Γ£ô tests/lib/api.test.ts > getOcrJob and cache > fetches when no cache and completes cache on success 2ms
+ Γ£ô tests/lib/api.test.ts > getOcrJob and cache > returns null when response not ok 1ms
+ Γ£ô tests/lib/api.test.ts > pollOcrJobUntilDone > returns result when job completes 40ms
+ Γ£ô tests/lib/api.test.ts > pollOcrJobUntilDone > returns failure object when job failed 1ms
+ Γ£ô tests/lib/api.test.ts > extractTextFromImage > rejects oversized files 9ms
+ Γ£ô tests/lib/api.test.ts > extractTextFromImage > returns text on success 6ms
+ Γ£ô tests/lib/api.test.ts > extractTextFromImage > maps network-style errors to friendly message 2ms
+ Γ£ô tests/lib/api.test.ts > extractTextFromImageAsync > returns job handle on 202 5ms
+ Γ£ô tests/lib/api.test.ts > listMyOcrJobs / listMyS3Links > listMyOcrJobs returns null without token 1ms
+ Γ£ô tests/lib/api.test.ts > listMyOcrJobs / listMyS3Links > listMyOcrJobs parses jobs on success 3ms
+ Γ£ô tests/lib/api.test.ts > listMyOcrJobs / listMyS3Links > listMyS3Links returns null on error 1ms
+ Γ£ô tests/lib/api.test.ts > translate API > translateText returns payload on ok 1ms
+ Γ£ô tests/lib/api.test.ts > translate API > getTranslateLanguages returns data when ok 1ms
+ Γ£ô tests/lib/api.test.ts > translate API > translateHealth reflects status 1ms
+ Γ£ô tests/lib/api.test.ts > Unsplash helpers > fetchUnsplashPhotos returns [] when not configured 2ms
+ Γ£ô tests/lib/api.test.ts > Unsplash helpers > searchUnsplashPhotos returns [] for blank query 1ms
+ Γ£ô tests/lib/utils.test.ts > cn > merges class names and resolves tailwind conflicts 32ms
