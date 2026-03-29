@@ -19,6 +19,8 @@ Pushes and PRs that touch `webapp/scalable/` run the CI workflow and SonarCloud 
 
 The **zap-scan** job in **webapp-ci.yml** builds the static site, serves it with **nginx** on `127.0.0.1:8080`, runs **ZAP baseline** via **`ghcr.io/zaproxy/zaproxy:stable`** (not the deprecated `owasp/zap2docker-stable` image), with `--network host` (reliable reachability), `--autooff` for classic report output, and uploads reports.
 
+- **Nginx for ZAP:** `.github/nginx-zap.conf` adds `try_files` for the Next.js export (fewer 404s), plus `favicon.ico` / `robots.txt` responses so probes do not return 404.
+- **Baseline rules:** `.github/zap-baseline.conf` is passed as `-c` to `zap-baseline.py`. It **IGNORE**s informational noise common in CI: stats rule **50003** (percentage of 2xx/4xx, content types, endpoint counts), **10116** (ZAP out of date), **10109** (modern web app), and **100000** (httpsender script for HTTP error status codes on the static mirror). Adjust that file if you need stricter findings.
 - **Artifacts:** Open the workflow run → **zap-scan** job → **Artifacts** → download **`zap-owasp-reports`** (zip containing `zap-report.html`, `zap-report.json`, `zap-report.md`). If ZAP did not write a file, a small placeholder is added so the artifact always downloads.
 - **Optional:** To fail the job when ZAP finds issues, remove the `-I` flag from `zap-baseline.py` in **webapp-ci.yml**.
 

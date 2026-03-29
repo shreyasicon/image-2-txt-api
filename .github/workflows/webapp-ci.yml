@@ -7,11 +7,15 @@ on:
     paths:
       - 'webapp/scalable/**'
       - '.github/workflows/webapp-ci.yml'
+      - '.github/nginx-zap.conf'
+      - '.github/zap-baseline.conf'
   pull_request:
     branches: [main]
     paths:
       - 'webapp/scalable/**'
       - '.github/workflows/webapp-ci.yml'
+      - '.github/nginx-zap.conf'
+      - '.github/zap-baseline.conf'
   workflow_dispatch:
 
 defaults:
@@ -137,6 +141,7 @@ jobs:
         run: |
           mkdir -p zap-reports
           chmod 777 zap-reports
+          cp "${{ github.workspace }}/.github/zap-baseline.conf" "${{ github.workspace }}/zap-reports/zap-baseline.conf"
           set +e
           docker run --rm \
             --network host \
@@ -146,6 +151,7 @@ jobs:
             ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py \
             -t http://127.0.0.1:8080/ \
+            -c zap-baseline.conf \
             -r zap-report.html \
             -J zap-report.json \
             -w zap-report.md \
