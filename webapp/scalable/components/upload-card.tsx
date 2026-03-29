@@ -13,7 +13,10 @@ interface UploadCardProps {
   onClear?: () => void;
 }
 
-function SelectedFilePreview({ selectedFile, onClear }: { selectedFile: File; onClear?: () => void }) {
+function SelectedFilePreview({
+  selectedFile,
+  onClear,
+}: Readonly<{ selectedFile: File; onClear?: () => void }>) {
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   useEffect(() => {
     const url = URL.createObjectURL(selectedFile);
@@ -48,7 +51,12 @@ function SelectedFilePreview({ selectedFile, onClear }: { selectedFile: File; on
   );
 }
 
-export function UploadCard({ onFileSelect, isLoading = false, selectedFile, onClear }: UploadCardProps) {
+export function UploadCard({
+  onFileSelect,
+  isLoading = false,
+  selectedFile,
+  onClear,
+}: Readonly<UploadCardProps>) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = React.useState(false);
 

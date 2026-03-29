@@ -33,7 +33,15 @@ function readFileAsDataUrl(file: File): Promise<string> {
     reader.onload = () => resolve(reader.result as string);
     reader.onerror = () => {
       const err = reader.error;
-      reject(err instanceof Error ? err : new Error(err != null ? String(err) : 'File read failed'));
+      if (err instanceof Error) {
+        reject(err);
+        return;
+      }
+      if (err != null) {
+        reject(new Error(String(err)));
+        return;
+      }
+      reject(new Error('File read failed'));
     };
     reader.readAsDataURL(file);
   });
@@ -116,7 +124,9 @@ function setCachedOcrJob(jobId: string, result: OCRExtractResult): void {
   if (typeof sessionStorage === 'undefined') return;
   try {
     sessionStorage.setItem(OCR_CACHE_PREFIX + jobId, JSON.stringify({ data: result, at: Date.now() }));
-  } catch (_) {}
+  } catch (error) {
+    console.error('Failed to cache OCR job in sessionStorage:', error);
+  }
 }
 
 /** Cache an OCR result client-side (e.g. after sync extract) so getOcrJob and My Uploads can use it. */
@@ -262,7 +272,7 @@ export async function extractTextFromImageAsync(
     uploadValidation: data.uploadValidation as OCRUploadValidation | undefined,
     quality: data.quality as OCRQuality | undefined,
     script: data.script as OCRScript | undefined,
-    raw: data as Record<string, unknown>,
+    raw: data,
   };
 }
 
@@ -324,7 +334,7 @@ export async function extractTextFromImage(
       uploadValidation: data.uploadValidation as OCRUploadValidation | undefined,
       quality: data.quality as OCRQuality | undefined,
       script: data.script as OCRScript | undefined,
-      raw: data as Record<string, unknown>,
+      raw: data,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -477,8 +487,11 @@ export interface UnsplashPhoto {
 }
 
 function getUnsplashHeaders(): Record<string, string> {
-  const key = typeof process !== 'undefined' ? process.env?.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY : '';
-  return { Authorization: `Client-ID ${key || ''}` };
+  let key = '';
+  if (typeof process !== 'undefined') {
+    key = process.env?.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY ?? '';
+  }
+  return { Authorization: `Client-ID ${key}` };
 }
 
 export async function fetchUnsplashPhotos(perPage = 12, page = 1): Promise<UnsplashPhoto[]> {

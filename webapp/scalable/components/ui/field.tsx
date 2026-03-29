@@ -1,5 +1,6 @@
 'use client'
 
+import * as React from 'react'
 import { useMemo } from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 
@@ -208,7 +209,9 @@ function FieldError({
       <ul className="ml-4 flex list-disc flex-col gap-1">
         {errors.map(
           (error, index) =>
-            error?.message && <li key={index}>{error.message}</li>,
+            error?.message && (
+              <li key={`${error.message}-${index}`}>{error.message}</li>
+            ),
         )}
       </ul>
     )

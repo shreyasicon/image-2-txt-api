@@ -22,7 +22,7 @@ export function VaultCard({
   date,
   tags = [],
   onDelete,
-}: VaultCardProps) {
+}: Readonly<VaultCardProps>) {
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -116,9 +116,9 @@ export function VaultCard({
             <div className="space-y-2">
               <p className="text-xs font-medium text-muted-foreground">Tags:</p>
               <div className="flex flex-wrap gap-1">
-                {tags.map((tag, idx) => (
+                {tags.map((tag) => (
                   <span
-                    key={idx}
+                    key={`${id}-tag-${tag}`}
                     className="text-xs px-2 py-1 bg-primary/10 text-primary rounded"
                   >
                     {tag}
