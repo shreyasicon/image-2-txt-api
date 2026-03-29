@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, type FormEventHandler, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, type ComponentProps, type ReactNode } from 'react';
 import Image from 'next/image';
 import { GlassCard } from '@/components/glass-card';
 import { GlowButton } from '@/components/glow-button';
@@ -16,6 +16,8 @@ import { ImageIcon, Search, AlertCircle, ExternalLink, Heart } from 'lucide-reac
 
 const PER_PAGE = 12;
 const FAVOURITES_KEY = 'unsplashFavourites';
+
+type FormSubmitHandler = NonNullable<ComponentProps<'form'>['onSubmit']>;
 
 function loadFavourites(): UnsplashPhoto[] {
   if (typeof localStorage === 'undefined') return [];
@@ -109,7 +111,7 @@ export default function FindImagesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isUnsplashConfigured]);
 
-  const handleSearch: FormEventHandler<HTMLFormElement> = (e) => {
+  const handleSearch: FormSubmitHandler = (e) => {
     e.preventDefault();
     const q = searchInput.trim();
     setQuery(q);

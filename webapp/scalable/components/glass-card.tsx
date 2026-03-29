@@ -6,12 +6,12 @@ interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
   interactive?: boolean;
 }
 
-export function GlassCard({ 
-  children, 
+export function GlassCard({
+  children,
   interactive = false,
   className,
-  ...props 
-}: GlassCardProps) {
+  ...props
+}: Readonly<GlassCardProps>) {
   return (
     <div
       className={cn(

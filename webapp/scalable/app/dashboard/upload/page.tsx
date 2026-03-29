@@ -38,7 +38,8 @@ export default function UploadPage() {
     setSelectedFile(file);
     setOcrResult(null);
     setIsLoading(true);
-    const getToken = auth?.getIdToken ? () => auth.getIdToken() : undefined;
+    const getIdTokenFn = auth?.getIdToken;
+    const getToken = getIdTokenFn ? () => getIdTokenFn() : undefined;
 
     try {
       const result = await extractTextFromImage(file, { getToken });
@@ -46,7 +47,7 @@ export default function UploadPage() {
       if (result.success && result.jobId) {
         cacheOcrResult(result.jobId, result);
         // Store in vault "Extracted images" section (localStorage)
-        if (file.size <= MAX_DATAURL_SIZE && typeof window !== 'undefined') {
+        if (file.size <= MAX_DATAURL_SIZE && typeof globalThis.window !== 'undefined') {
           const reader = new FileReader();
           reader.onload = () => {
             const dataUrl = reader.result as string;
@@ -89,7 +90,7 @@ export default function UploadPage() {
     setOcrResult(null);
   };
 
-  const isReadyForNextStep = ocrResult && ocrResult.text && !ocrResult.error;
+  const isReadyForNextStep = Boolean(ocrResult?.text && !ocrResult?.error);
 
   return (
     <div className="p-8 max-w-4xl mx-auto">

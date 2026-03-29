@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEventHandler } from 'react';
+import { useState, type ComponentProps } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertCircle } from 'lucide-react';
+
+type FormSubmitHandler = NonNullable<ComponentProps<'form'>['onSubmit']>;
 
 export default function AuthPage() {
   const auth = useAuth();
@@ -51,34 +53,38 @@ export default function AuthPage() {
     return centerShell(<p className="text-center text-muted-foreground">Signed in. Redirecting...</p>);
   }
 
-  const handleSignIn: FormEventHandler<HTMLFormElement> = async (e) => {
+  const handleSignIn: FormSubmitHandler = (e) => {
     e.preventDefault();
     if (!auth) return;
     setError('');
     setLoading(true);
-    try {
-      await auth.signIn(signInEmail.trim(), signInPassword);
-      router.replace('/dashboard');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign in failed');
-    } finally {
-      setLoading(false);
-    }
+    void (async () => {
+      try {
+        await auth.signIn(signInEmail.trim(), signInPassword);
+        router.replace('/dashboard');
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Sign in failed');
+      } finally {
+        setLoading(false);
+      }
+    })();
   };
 
-  const handleSignUp: FormEventHandler<HTMLFormElement> = async (e) => {
+  const handleSignUp: FormSubmitHandler = (e) => {
     e.preventDefault();
     if (!auth) return;
     setError('');
     setLoading(true);
-    try {
-      await auth.signUp(signUpEmail.trim(), signUpPassword, signUpName.trim() || undefined);
-      setSignUpSent(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign up failed');
-    } finally {
-      setLoading(false);
-    }
+    void (async () => {
+      try {
+        await auth.signUp(signUpEmail.trim(), signUpPassword, signUpName.trim() || undefined);
+        setSignUpSent(true);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Sign up failed');
+      } finally {
+        setLoading(false);
+      }
+    })();
   };
 
   return centerShell(

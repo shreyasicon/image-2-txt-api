@@ -27,7 +27,8 @@ export default function SettingsPage() {
       await auth.updateUsername(displayName.trim());
       setNameSaved(true);
       setTimeout(() => setNameSaved(false), 3000);
-    } catch (_) {
+    } catch (error) {
+      console.error('Failed to update display name:', error);
       setNameSaved(false);
     } finally {
       setNameSaving(false);

@@ -40,7 +40,7 @@ function UploadedImagesSection({
   localVaultImages,
   onRemoveExtractedImage,
   onDeleteVaultImage,
-}: UploadedImagesSectionProps) {
+}: Readonly<UploadedImagesSectionProps>) {
   if (s3Loading && !hasAnyUploadedImage) {
     return (
       <GlassCard className="py-8 text-center text-muted-foreground">Loading your uploaded images…</GlassCard>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Amplify } from 'aws-amplify';
 import { getCurrentUser, fetchAuthSession, fetchUserAttributes, signIn as amplifySignIn, signOut as amplifySignOut, signUp as amplifySignUp, updateUserAttribute } from 'aws-amplify/auth';
 import { getAmplifyConfig, isCognitoConfigured } from '@/lib/amplify';
@@ -127,17 +127,20 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     });
   }, []);
 
-  const value: AuthContextValue = {
-    user,
-    loading,
-    isConfigured: isCognitoConfigured,
-    getIdToken,
-    signIn,
-    signOut,
-    signUp: signUpUser,
-    updateUsername,
-    refreshUser,
-  };
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      user,
+      loading,
+      isConfigured: isCognitoConfigured,
+      getIdToken,
+      signIn,
+      signOut,
+      signUp: signUpUser,
+      updateUsername,
+      refreshUser,
+    }),
+    [user, loading, getIdToken, signIn, signOut, signUpUser, updateUsername, refreshUser],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
