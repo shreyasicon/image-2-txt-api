@@ -131,26 +131,31 @@ jobs:
           docker ps
 
       # ZAP shares host network → targets 127.0.0.1:8080; reports written to mounted zap-reports/
+      # Use ghcr.io/zaproxy/zaproxy:stable — owasp/zap2docker-stable is deprecated / often missing amd64 on Docker Hub.
       - name: Run OWASP ZAP baseline
         working-directory: .
         run: |
+          mkdir -p zap-reports
+          chmod 777 zap-reports
           set +e
           docker run --rm \
             --network host \
             -v "${{ github.workspace }}/zap-reports:/zap/wrk:rw" \
             -w /zap/wrk \
             -u root \
-            owasp/zap2docker-stable \
+            ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py \
             -t http://127.0.0.1:8080/ \
             -r zap-report.html \
             -J zap-report.json \
             -w zap-report.md \
+            --autooff \
+            -T 10 \
             -I
           ZAP_EXIT=$?
           set -e
           echo "zap-baseline exit code: $ZAP_EXIT"
-          ls -la zap-reports/
+          ls -la zap-reports/ || true
           test -f zap-reports/zap-report.html && echo "OK: zap-report.html present" || echo "WARN: zap-report.html missing"
           exit 0
         continue-on-error: true
