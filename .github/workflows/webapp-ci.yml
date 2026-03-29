@@ -156,12 +156,13 @@ jobs:
             -r zap-report.html \
             -J zap-report.json \
             -w zap-report.md \
-            -T 10 \
+            -T 15 \
             -I
           ZAP_EXIT=$?
           set -e
           echo "zap-baseline exit code: $ZAP_EXIT"
           ls -la zap-reports/ || true
+          if [ -f zap-reports/zap.yaml ]; then echo "--- zap-reports/zap.yaml (head) ---"; head -n 40 zap-reports/zap.yaml; fi
           test -f zap-reports/zap-report.html && echo "OK: zap-report.html present" || echo "WARN: zap-report.html missing"
           exit 0
         continue-on-error: true
