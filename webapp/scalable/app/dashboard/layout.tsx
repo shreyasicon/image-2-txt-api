@@ -3,9 +3,9 @@ import { AuthProvider } from '@/components/auth-provider';
 
 export default function DashboardLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
     <AuthProvider>
       <div className="flex h-screen bg-background">

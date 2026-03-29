@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, type FormEvent, type ReactNode } from 'react';
 import Image from 'next/image';
 import { GlassCard } from '@/components/glass-card';
 import { GlowButton } from '@/components/glow-button';
@@ -31,7 +31,9 @@ function loadFavourites(): UnsplashPhoto[] {
 function saveFavourites(photos: UnsplashPhoto[]) {
   try {
     localStorage.setItem(FAVOURITES_KEY, JSON.stringify(photos));
-  } catch (_) {}
+  } catch {
+    /* ignore quota / private mode */
+  }
 }
 
 export default function FindImagesPage() {
@@ -67,7 +69,8 @@ export default function FindImagesPage() {
         : await fetchUnsplashPhotos(PER_PAGE, pageNum);
       setPhotos((prev) => (append ? [...prev, ...list] : list));
       setHasMore(list.length >= PER_PAGE);
-    } catch {
+    } catch (err) {
+      console.error('Unsplash load failed:', err);
       setPhotos((prev) => (append ? prev : []));
       setHasMore(false);
     } finally {
@@ -77,7 +80,7 @@ export default function FindImagesPage() {
 
   useEffect(() => {
     if (!isUnsplashConfigured) return;
-    const fromOcr = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('ocrTextForFindImages') : null;
+    const fromOcr = typeof sessionStorage === 'undefined' ? null : sessionStorage.getItem('ocrTextForFindImages');
     if (fromOcr) {
       sessionStorage.removeItem('ocrTextForFindImages');
       const q = fromOcr.trim().slice(0, 100);
@@ -90,7 +93,8 @@ export default function FindImagesPage() {
           setPhotos(list);
           setHasMore(list.length >= PER_PAGE);
           setLoading(false);
-        }).catch(() => {
+        }).catch((err) => {
+          console.error('Unsplash search failed:', err);
           setPhotos([]);
           setHasMore(false);
           setLoading(false);
@@ -105,7 +109,7 @@ export default function FindImagesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isUnsplashConfigured]);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const q = searchInput.trim();
     setQuery(q);
@@ -117,7 +121,8 @@ export default function FindImagesPage() {
         setPhotos(list);
         setHasMore(list.length >= PER_PAGE);
         setLoading(false);
-      }).catch(() => {
+      }).catch((err) => {
+        console.error('Unsplash search failed:', err);
         setPhotos([]);
         setHasMore(false);
         setLoading(false);
@@ -127,7 +132,8 @@ export default function FindImagesPage() {
         setPhotos(list);
         setHasMore(list.length >= PER_PAGE);
         setLoading(false);
-      }).catch(() => {
+      }).catch((err) => {
+        console.error('Unsplash fetch failed:', err);
         setPhotos([]);
         setHasMore(false);
         setLoading(false);
@@ -139,6 +145,119 @@ export default function FindImagesPage() {
     const next = page + 1;
     setPage(next);
     loadPhotos(next, !!query.trim(), true);
+  };
+
+  const renderPhotosMain = (): ReactNode => {
+    if (loading && photos.length === 0) {
+      return (
+        <GlassCard className="flex flex-col items-center justify-center min-h-48 gap-4">
+          <LoadingSpinner />
+          <p className="text-muted-foreground">Loading photos…</p>
+        </GlassCard>
+      );
+    }
+    if (photos.length === 0) {
+      return (
+        <GlassCard>
+          <p className="text-muted-foreground text-center py-8">
+            {query ? `No photos found for “${query}”. Try another search.` : 'No photos loaded.'}
+          </p>
+        </GlassCard>
+      );
+    }
+    return (
+      <>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          {photos.map((photo) => (
+            <div
+              key={photo.id}
+              className="group relative rounded-lg overflow-hidden border border-border hover:border-primary/50 transition-colors"
+            >
+              <a
+                href={photo.links?.html || 'https://unsplash.com'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block"
+              >
+                <div className="aspect-square relative bg-muted">
+                  <Image
+                    src={photo.urls?.regular || photo.urls?.small || photo.urls?.thumb || ''}
+                    alt={photo.alt_description || 'Unsplash photo'}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+                  />
+                </div>
+                <div className="p-2 bg-background/80">
+                  <p className="text-xs text-muted-foreground truncate">
+                    by {photo.user?.name || 'Unknown'}
+                  </p>
+                </div>
+              </a>
+              {isLoggedIn && (
+                <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      toggleFavourite(photo);
+                    }}
+                    className="p-2 rounded-full bg-background/80 border border-border hover:bg-primary/20 transition-colors"
+                    title={isFavourite(photo.id) ? 'Remove from favourites' : 'Add to favourites'}
+                    aria-label={isFavourite(photo.id) ? 'Remove from favourites' : 'Add to favourites'}
+                  >
+                    <Heart
+                      className={`w-5 h-5 ${isFavourite(photo.id) ? 'fill-primary text-primary' : 'text-muted-foreground'}`}
+                      aria-hidden
+                    />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      try {
+                        const existing = localStorage.getItem('vaultItems');
+                        const items = existing ? JSON.parse(existing) : [];
+                        const title =
+                          (photo as { description?: string }).description ||
+                          photo.alt_description ||
+                          `Unsplash image by ${photo.user?.name || 'Unknown'}`;
+                        const imageUrl =
+                          photo.urls?.regular || photo.urls?.small || photo.urls?.thumb || '';
+                        const newItem = {
+                          id: Date.now().toString(),
+                          type: 'image' as const,
+                          title: title.slice(0, 80),
+                          content: imageUrl,
+                          date: new Date().toLocaleString(),
+                          tags: ['unsplash', 'image'],
+                        };
+                        items.unshift(newItem);
+                        localStorage.setItem('vaultItems', JSON.stringify(items.slice(0, 50)));
+                      } catch (err) {
+                        console.error('Error saving image to vault:', err);
+                      }
+                    }}
+                    className="px-2 py-1 rounded-full bg-background/90 border border-border text-xs text-primary hover:bg-primary/10"
+                  >
+                    Save to Vault
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        {hasMore && (
+          <div className="flex justify-center pt-4">
+            <GlowButton onClick={loadMore} disabled={loading} variant="outline">
+              {loading ? <LoadingSpinner /> : 'Load more'}
+            </GlowButton>
+          </div>
+        )}
+      </>
+    );
   };
 
   return (
@@ -189,110 +308,7 @@ export default function FindImagesPage() {
             </GlowButton>
           </form>
 
-          {loading && photos.length === 0 ? (
-            <GlassCard className="flex flex-col items-center justify-center min-h-48 gap-4">
-              <LoadingSpinner />
-              <p className="text-muted-foreground">Loading photos…</p>
-            </GlassCard>
-          ) : photos.length === 0 ? (
-            <GlassCard>
-              <p className="text-muted-foreground text-center py-8">
-                {query ? `No photos found for “${query}”. Try another search.` : 'No photos loaded.'}
-              </p>
-            </GlassCard>
-          ) : (
-            <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {photos.map((photo) => (
-                  <div
-                    key={photo.id}
-                    className="group relative rounded-lg overflow-hidden border border-border hover:border-primary/50 transition-colors"
-                  >
-                    <a
-                      href={photo.links?.html || 'https://unsplash.com'}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block"
-                    >
-                      <div className="aspect-square relative bg-muted">
-                        <Image
-                          src={photo.urls?.regular || photo.urls?.small || photo.urls?.thumb || ''}
-                          alt={photo.alt_description || 'Unsplash photo'}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
-                          sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
-                        />
-                      </div>
-                      <div className="p-2 bg-background/80">
-                        <p className="text-xs text-muted-foreground truncate">
-                          by {photo.user?.name || 'Unknown'}
-                        </p>
-                      </div>
-                    </a>
-                    {isLoggedIn && (
-                      <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            toggleFavourite(photo);
-                          }}
-                          className="p-2 rounded-full bg-background/80 border border-border hover:bg-primary/20 transition-colors"
-                          title={isFavourite(photo.id) ? 'Remove from favourites' : 'Add to favourites'}
-                          aria-label={isFavourite(photo.id) ? 'Remove from favourites' : 'Add to favourites'}
-                        >
-                          <Heart
-                            className={`w-5 h-5 ${isFavourite(photo.id) ? 'fill-primary text-primary' : 'text-muted-foreground'}`}
-                            aria-hidden
-                          />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            try {
-                              const existing = localStorage.getItem('vaultItems');
-                              const items = existing ? JSON.parse(existing) : [];
-                              const title =
-                                (photo as any).description ||
-                                photo.alt_description ||
-                                `Unsplash image by ${photo.user?.name || 'Unknown'}`;
-                              const imageUrl =
-                                photo.urls?.regular || photo.urls?.small || photo.urls?.thumb || '';
-                              const newItem = {
-                                id: Date.now().toString(),
-                                type: 'image' as const,
-                                title: title.slice(0, 80),
-                                content: imageUrl,
-                                date: new Date().toLocaleString(),
-                                tags: ['unsplash', 'image'],
-                              };
-                              items.unshift(newItem);
-                              localStorage.setItem('vaultItems', JSON.stringify(items.slice(0, 50)));
-                            } catch (err) {
-                              console.error('Error saving image to vault:', err);
-                            }
-                          }}
-                          className="px-2 py-1 rounded-full bg-background/90 border border-border text-xs text-primary hover:bg-primary/10"
-                        >
-                          Save to Vault
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-              {hasMore && (
-                <div className="flex justify-center pt-4">
-                  <GlowButton onClick={loadMore} disabled={loading} variant="outline">
-                    {loading ? <LoadingSpinner /> : 'Load more'}
-                  </GlowButton>
-                </div>
-              )}
-            </>
-          )}
+          {renderPhotosMain()}
 
           {favourites.length > 0 && (
             <div className="mt-10 space-y-4">

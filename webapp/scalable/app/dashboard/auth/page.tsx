@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { Button } from '@/components/ui/button';
@@ -51,12 +51,13 @@ export default function AuthPage() {
     return centerShell(<p className="text-center text-muted-foreground">Signed in. Redirecting...</p>);
   }
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSignIn = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!auth) return;
     setError('');
     setLoading(true);
     try {
-      await auth!.signIn(signInEmail.trim(), signInPassword);
+      await auth.signIn(signInEmail.trim(), signInPassword);
       router.replace('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign in failed');
@@ -65,12 +66,13 @@ export default function AuthPage() {
     }
   };
 
-  const handleSignUp = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!auth) return;
     setError('');
     setLoading(true);
     try {
-      await auth!.signUp(signUpEmail.trim(), signUpPassword, signUpName.trim() || undefined);
+      await auth.signUp(signUpEmail.trim(), signUpPassword, signUpName.trim() || undefined);
       setSignUpSent(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign up failed');
