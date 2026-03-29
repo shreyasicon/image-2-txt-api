@@ -17,7 +17,7 @@ Pushes and PRs that touch `webapp/scalable/` run the CI workflow and SonarCloud 
 
 ## OWASP ZAP
 
-The **zap-scan** job in **webapp-ci.yml** builds the static site, serves it with **nginx** on `127.0.0.1:8080`, runs **ZAP baseline** via **`ghcr.io/zaproxy/zaproxy:stable`** (not the deprecated `owasp/zap2docker-stable` image), with `--network host` (reliable reachability), `--autooff` for classic report output, and uploads reports.
+The **zap-scan** job in **webapp-ci.yml** builds the static site, serves it with **nginx** on `127.0.0.1:8080`, runs **ZAP baseline** via **`ghcr.io/zaproxy/zaproxy:stable`** (not the deprecated `owasp/zap2docker-stable` image), with `--network host` (reliable reachability). **Do not use `--autooff` in Docker:** the baseline script only writes HTML/JSON/MD via the **Automation Framework** path when running inside the ZAP container; `--autooff` skips AF and never reaches report generation.
 
 - **Nginx for ZAP:** `.github/nginx-zap.conf` adds `try_files` for the Next.js export (fewer 404s), plus `favicon.ico` / `robots.txt` responses so probes do not return 404.
 - **Baseline rules:** `.github/zap-baseline.conf` is passed as `-c` to `zap-baseline.py`. It **IGNORE**s informational noise common in CI: stats rule **50003** (percentage of 2xx/4xx, content types, endpoint counts), **10116** (ZAP out of date), **10109** (modern web app), and **100000** (httpsender script for HTTP error status codes on the static mirror). Adjust that file if you need stricter findings.
