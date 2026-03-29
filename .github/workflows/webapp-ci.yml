@@ -1,4 +1,4 @@
-# Webapp CI: build, lint, SonarCloud, OWASP ZAP. Reports: SonarCloud (PR/Summary) + ZAP artifacts.
+# Webapp CI: build, lint, SonarCloud, OWASP ZAP. SonarCloud dashboard + ZAP HTML/JSON/MD via upload-artifact (zap-owasp-reports).
 name: Webapp CI
 
 on:
@@ -65,6 +65,10 @@ jobs:
         working-directory: webapp/scalable
         run: npm run build
 
+      - name: Unit tests with coverage
+        working-directory: webapp/scalable
+        run: npm run test:coverage
+
       # SonarCloud: disable "Automatic Analysis" in project settings (Project Settings > Analysis Method)
       # so CI analysis can run. See https://sonarcloud.io/project/overview?id=shreyasicon_image-2-txt-api
       - name: SonarCloud Scan
@@ -78,6 +82,7 @@ jobs:
             -Dsonar.organization=shreyasicon
             -Dsonar.projectKey=shreyasicon_image-2-txt-api
             -Dsonar.branch.name=main
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
 
   zap-scan:
     needs: build-and-lint
@@ -97,6 +102,7 @@ jobs:
           npm ci
           npm run build
 
+      # Static site for ZAP (Next.js export → out/)
       - name: Prepare static for ZAP
         working-directory: .
         run: |
@@ -104,67 +110,107 @@ jobs:
           if [ -d webapp/scalable/out ]; then
             cp -r webapp/scalable/out/. zap-static/
           else
-            echo '<!DOCTYPE html><html><head><title>App</title></head><body>OK</body></html>' > zap-static/index.html
+            echo '<!DOCTYPE html><html><head><title>App</title></head><body><h1>ZAP target</h1><p>OK</p></body></html>' > zap-static/index.html
           fi
           ls -la zap-static
 
-      - name: Start web server
+      # Publish nginx on host :8080 so ZAP can use --network host (avoids cross-container DNS issues).
+      - name: Start nginx for ZAP
+        working-directory: .
         run: |
-          docker network create zapnet 2>/dev/null || true
-          docker run -d --name webapp \
-            --network zapnet \
-            -v ${{ github.workspace }}/zap-static:/usr/share/nginx/html:ro \
+          docker rm -f zap-nginx 2>/dev/null || true
+          docker run -d --name zap-nginx \
+            -p 127.0.0.1:8080:80 \
+            -v "${{ github.workspace }}/zap-static:/usr/share/nginx/html:ro" \
             nginx:alpine
-          sleep 3
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            curl -fsS "http://127.0.0.1:8080/" >/dev/null && break
+            sleep 1
+          done
+          curl -fsS -o /dev/null "http://127.0.0.1:8080/" || { echo "nginx not reachable"; docker logs zap-nginx; exit 1; }
           docker ps
 
+      # ZAP shares host network → targets 127.0.0.1:8080; reports written to mounted zap-reports/
       - name: Run OWASP ZAP baseline
         working-directory: .
         run: |
+          set +e
           docker run --rm \
-            --network zapnet \
+            --network host \
             -v "${{ github.workspace }}/zap-reports:/zap/wrk:rw" \
             -w /zap/wrk \
             -u root \
             owasp/zap2docker-stable \
             zap-baseline.py \
-            -t http://webapp:80 \
+            -t http://127.0.0.1:8080/ \
             -r zap-report.html \
             -J zap-report.json \
             -w zap-report.md \
             -I
+          ZAP_EXIT=$?
+          set -e
+          echo "zap-baseline exit code: $ZAP_EXIT"
+          ls -la zap-reports/
+          test -f zap-reports/zap-report.html && echo "OK: zap-report.html present" || echo "WARN: zap-report.html missing"
+          exit 0
         continue-on-error: true
 
-      - name: Stop web server
+      - name: Stop nginx
         if: always()
-        run: docker rm -f webapp 2>/dev/null || true
+        run: docker rm -f zap-nginx 2>/dev/null || true
 
-      - name: List ZAP reports
-        if: always()
-        working-directory: .
-        run: ls -la zap-reports/ 2>/dev/null || echo "zap-reports not found or empty"
-
-      - name: Ensure ZAP report exists for summary
+      - name: List ZAP report files
         if: always()
         working-directory: .
         run: |
-          if [ ! -f zap-reports/zap-report.html ]; then
-            mkdir -p zap-reports
-            echo '<!DOCTYPE html><html><head><title>ZAP Report</title></head><body><h1>ZAP did not produce a report</h1><p>Check the "Run OWASP ZAP baseline" step logs. The scan may have failed to connect or exited before writing.</p></body></html>' > zap-reports/zap-report.html
+          ls -la zap-reports/ 2>/dev/null || echo "zap-reports missing"
+          for f in zap-reports/zap-report.html zap-reports/zap-report.json zap-reports/zap-report.md; do
+            if [ -f "$f" ]; then wc -c "$f"; fi
+          done
+
+      - name: Fallback placeholder if no HTML report
+        if: always()
+        working-directory: .
+        run: |
+          mkdir -p zap-reports
+          if [ ! -s zap-reports/zap-report.html ]; then
+            printf '%s' '<!DOCTYPE html><html><head><meta charset="utf-8"><title>ZAP</title></head><body><h1>ZAP did not write zap-report.html</h1><p>See the <strong>Run OWASP ZAP baseline</strong> step logs. Ensure the baseline completed and /zap/wrk is writable.</p></body></html>' > zap-reports/zap-report.html
+          fi
+          if [ ! -s zap-reports/zap-report.md ]; then
+            echo "# ZAP baseline" > zap-reports/zap-report.md
+            echo "No markdown report was generated; check the ZAP step logs." >> zap-reports/zap-report.md
+          fi
+          if [ ! -s zap-reports/zap-report.json ]; then
+            echo '{"note":"ZAP did not write JSON output; see Run OWASP ZAP baseline logs"}' > zap-reports/zap-report.json
           fi
 
-      - name: Add ZAP report to job summary
+      - name: Upload ZAP reports (HTML, JSON, Markdown)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-owasp-reports
+          path: |
+            zap-reports/zap-report.html
+            zap-reports/zap-report.json
+            zap-reports/zap-report.md
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Job summary (link to artifacts)
         if: always()
         working-directory: .
         run: |
-          echo "## ZAP Security Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          if [ -f zap-reports/zap-report.html ]; then
-            echo "<details open><summary>View report (expand to see HTML)</summary>" >> $GITHUB_STEP_SUMMARY
-            # GitHub job summary can render HTML; cap size to avoid truncation (~1MB limit)
-            head -c 900000 zap-reports/zap-report.html >> $GITHUB_STEP_SUMMARY
-            echo "</details>" >> $GITHUB_STEP_SUMMARY
+          echo "## OWASP ZAP baseline" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Download the full **HTML, JSON, and Markdown** reports from this job’s **Artifacts** section (artifact name: \`zap-owasp-reports\`)." >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f zap-reports/zap-report.md ] && [ -s zap-reports/zap-report.md ]; then
+            echo "### Markdown excerpt" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            head -n 80 zap-reports/zap-report.md >> "$GITHUB_STEP_SUMMARY"
+          elif [ -f zap-reports/zap-report.html ] && [ -s zap-reports/zap-report.html ]; then
+            echo "HTML report size: $(wc -c < zap-reports/zap-report.html) bytes (download artifact to view)." >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "No report was generated." >> $GITHUB_STEP_SUMMARY
+            echo "No report content; see placeholder HTML in artifact." >> "$GITHUB_STEP_SUMMARY"
           fi
 

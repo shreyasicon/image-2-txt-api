@@ -306,16 +306,16 @@ app.get("/", (_, res) => {
         endpoints: {
             "GET /health": "Health check (liveness)",
             "GET /ready": "Readiness (DynamoDB connectivity)",
-            "POST /ocr": "Upload image (multipart). With validation (default) or body skipValidation: true for without validation",
-            "POST /ocr/base64": "Upload base64 image (JSON body). With validation (default) or body skipValidation: true for without validation",
-            "POST /ocr/base64?async=1": "Upload base64 via SQS (returns 202). Same body; optional skipValidation: true for without validation",
+            "POST /ocr": "Multipart upload. Optional skipPostprocess: true = OCR+S3 only (no postprocess). skipValidation: true = no quality/script fields only.",
+            "POST /ocr/base64": "JSON { image, filename, ... }. skipPostprocess: true = raw extract (no blocked/PII/quality). skipValidation: true = skip quality/script only.",
+            "POST /ocr/base64?async=1": "Async via SQS; include skipPostprocess in body for raw extract in worker",
             "GET /ocr?list=mine": "List my OCR jobs (Auth required)",
             "GET /users/me/s3-links": "List my S3 links (DynamoDB UserS3Links, Auth required)",
             "GET /ocr/:jobId": "Get job result",
             "PUT /ocr/:jobId": "Update job text",
             "DELETE /ocr/:jobId": "Delete job"
         },
-        validation: "With validation (default): response includes uploadValidation, quality, script. Without validation: send body skipValidation: true or skipValidation: 1 for text/confidence only (faster)."
+        validation: "skipPostprocess: true — no ocr-postprocess (blocked words, sensitivity, quality/script); same Textract/Tesseract + S3 + DynamoDB. skipValidation: true — only omits quality/script; policy checks still run."
     });
 });
 
@@ -426,6 +426,14 @@ function isSkipValidation(body) {
     return v === true || v === "true" || v === "1";
 }
 
+/** Skip all ocr-postprocess checks: blocked words, sensitivity, and quality/script enrichment. Same OCR + S3. */
+function isSkipPostprocess(body, query) {
+    const b = body && body.skipPostprocess;
+    const q = query && query.skipPostprocess;
+    const v = b !== undefined && b !== null && b !== "" ? b : q;
+    return v === true || v === "true" || v === "1";
+}
+
 // Upload image
 app.post("/ocr", upload.any(), async(req, res) => {
 
@@ -436,6 +444,7 @@ app.post("/ocr", upload.any(), async(req, res) => {
     const file = req.files[0];
     const language = req.body.language || "eng";
     const jobId = crypto.randomUUID();
+    const skipPostprocess = isSkipPostprocess(req.body, req.query);
     const skipValidation = isSkipValidation(req.body);
     const userId = req.userId || null;
     let imageBuffer;
@@ -450,20 +459,22 @@ app.post("/ocr", upload.any(), async(req, res) => {
         if (!result) {
             result = await processOCR(file.path, language);
             const text = result.text || "";
-            const blocked = checkBlockedWords(text);
-            if (blocked.blocked) {
-                cleanupFile(file.path);
-                const reason = (blocked.categories && blocked.categories.length) ? blocked.categories.join(", ") : "Blocked content";
-                if (!process.env.AWS_LAMBDA_FUNCTION_NAME) console.log("[OCR] Blocked:", reason);
-                return res.status(400).json({ message: "Extracted text cannot be displayed.", reason, categories: blocked.categories || [] });
-            }
-            const sensitivity = checkSensitivity(text);
-            if (sensitivity.sensitive) {
-                cleanupFile(file.path);
-                const categories = getUniqueCategories(sensitivity.types, sensitivity.matchedTerms);
-                const reason = categories.length ? categories.join(", ") : "Sensitive content";
-                if (!process.env.AWS_LAMBDA_FUNCTION_NAME) console.log("[OCR] Blocked:", reason);
-                return res.status(400).json({ message: "Extracted text cannot be displayed.", reason, categories });
+            if (!skipPostprocess) {
+                const blocked = checkBlockedWords(text);
+                if (blocked.blocked) {
+                    cleanupFile(file.path);
+                    const reason = (blocked.categories && blocked.categories.length) ? blocked.categories.join(", ") : "Blocked content";
+                    if (!process.env.AWS_LAMBDA_FUNCTION_NAME) console.log("[OCR] Blocked:", reason);
+                    return res.status(400).json({ message: "Extracted text cannot be displayed.", reason, categories: blocked.categories || [] });
+                }
+                const sensitivity = checkSensitivity(text);
+                if (sensitivity.sensitive) {
+                    cleanupFile(file.path);
+                    const categories = getUniqueCategories(sensitivity.types, sensitivity.matchedTerms);
+                    const reason = categories.length ? categories.join(", ") : "Sensitive content";
+                    if (!process.env.AWS_LAMBDA_FUNCTION_NAME) console.log("[OCR] Blocked:", reason);
+                    return res.status(400).json({ message: "Extracted text cannot be displayed.", reason, categories });
+                }
             }
             setCachedOcrResult(imageBuffer, { text: result.text, confidence: result.confidence });
         }
@@ -484,7 +495,8 @@ app.post("/ocr", upload.any(), async(req, res) => {
             confidence
         };
         if (s3Key) payload.s3Key = s3Key;
-        if (!skipValidation) {
+        if (skipPostprocess) payload.skipPostprocess = true;
+        if (!skipPostprocess && !skipValidation) {
             const enriched = validateAndEnrichOcrPayload({
                 filename: file.originalname,
                 contentType: file.mimetype || "",
@@ -530,6 +542,7 @@ app.post("/ocr/base64", async(req, res) => {
     }
     const jobId = crypto.randomUUID();
     const safeName = (filename && typeof filename === "string") ? filename : `upload-${jobId}.png`;
+    const skipPostprocess = isSkipPostprocess(req.body, req.query);
     const skipValidation = isSkipValidation(req.body);
     const userId = req.userId || null;
     const useAsync = OCR_QUEUE_URL && (req.body.async === true || req.body.async === "true" || req.query.async === "1" || req.query.async === "true");
@@ -546,7 +559,8 @@ app.post("/ocr/base64", async(req, res) => {
                     bucket: S3_BUCKET,
                     filename: safeName,
                     userId: userId || null,
-                    language
+                    language,
+                    skipPostprocess: !!skipPostprocess
                 })
             }));
             cleanupFile(tempFile);
@@ -561,20 +575,22 @@ app.post("/ocr/base64", async(req, res) => {
         if (!result) {
             result = await processOCR(tempFile, language);
             const text = result.text || "";
-            const blockedBase64 = checkBlockedWords(text);
-            if (blockedBase64.blocked) {
-                cleanupFile(tempFile);
-                const reason = (blockedBase64.categories && blockedBase64.categories.length) ? blockedBase64.categories.join(", ") : "Blocked content";
-                if (!process.env.AWS_LAMBDA_FUNCTION_NAME) console.log("[OCR base64] Blocked:", reason);
-                return res.status(400).json({ message: "Extracted text cannot be displayed.", reason, categories: blockedBase64.categories || [] });
-            }
-            const sensitivity = checkSensitivity(text);
-            if (sensitivity.sensitive) {
-                cleanupFile(tempFile);
-                const categories = getUniqueCategories(sensitivity.types, sensitivity.matchedTerms);
-                const reason = categories.length ? categories.join(", ") : "Sensitive content";
-                if (!process.env.AWS_LAMBDA_FUNCTION_NAME) console.log("[OCR base64] Blocked:", reason);
-                return res.status(400).json({ message: "Extracted text cannot be displayed.", reason, categories });
+            if (!skipPostprocess) {
+                const blockedBase64 = checkBlockedWords(text);
+                if (blockedBase64.blocked) {
+                    cleanupFile(tempFile);
+                    const reason = (blockedBase64.categories && blockedBase64.categories.length) ? blockedBase64.categories.join(", ") : "Blocked content";
+                    if (!process.env.AWS_LAMBDA_FUNCTION_NAME) console.log("[OCR base64] Blocked:", reason);
+                    return res.status(400).json({ message: "Extracted text cannot be displayed.", reason, categories: blockedBase64.categories || [] });
+                }
+                const sensitivity = checkSensitivity(text);
+                if (sensitivity.sensitive) {
+                    cleanupFile(tempFile);
+                    const categories = getUniqueCategories(sensitivity.types, sensitivity.matchedTerms);
+                    const reason = categories.length ? categories.join(", ") : "Sensitive content";
+                    if (!process.env.AWS_LAMBDA_FUNCTION_NAME) console.log("[OCR base64] Blocked:", reason);
+                    return res.status(400).json({ message: "Extracted text cannot be displayed.", reason, categories });
+                }
             }
             setCachedOcrResult(buf, { text: result.text, confidence: result.confidence });
         }
@@ -594,7 +610,8 @@ app.post("/ocr/base64", async(req, res) => {
             confidence
         };
         if (s3Key) payload.s3Key = s3Key;
-        if (!skipValidation) {
+        if (skipPostprocess) payload.skipPostprocess = true;
+        if (!skipPostprocess && !skipValidation) {
             const enriched = validateAndEnrichOcrPayload({
                 filename: safeName,
                 contentType,

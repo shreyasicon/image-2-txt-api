@@ -5,7 +5,7 @@
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
 | **webapp-ci.yml** | Push/PR to `main` or `master` (webapp paths) | Build, lint, **SonarCloud** scan |
-| **webapp-security-zap.yml** | Push/PR to `main` or `master` (webapp paths), or **manual** (workflow_dispatch) | **OWASP ZAP** baseline scan, upload HTML/JSON/MD reports |
+| **webapp-ci.yml** (`zap-scan` job) | Same triggers as above | **OWASP ZAP** baseline scan, **artifacts** `zap-owasp-reports` |
 
 ## SonarCloud
 
@@ -17,13 +17,10 @@ Pushes and PRs that touch `webapp/scalable/` run the CI workflow and SonarCloud 
 
 ## OWASP ZAP
 
-The ZAP workflow builds the webapp, serves it with nginx in a container, runs a ZAP baseline scan against it, and uploads reports as artifacts.
+The **zap-scan** job in **webapp-ci.yml** builds the static site, serves it with **nginx** on `127.0.0.1:8080`, runs **ZAP baseline** with `--network host` (reliable reachability), and uploads reports.
 
-- **Artifacts:** After the run, open the job → **Artifacts** and download:
-  - `zap-owasp-report` (HTML)
-  - `zap-owasp-report-json` (JSON)
-  - `zap-owasp-report-md` (Markdown)
-- **Optional:** To fail the job when ZAP finds issues, remove the `-I` flag from the `zap-baseline.py` command in **webapp-security-zap.yml**.
+- **Artifacts:** Open the workflow run → **zap-scan** job → **Artifacts** → download **`zap-owasp-reports`** (zip containing `zap-report.html`, `zap-report.json`, `zap-report.md`). If ZAP did not write a file, a small placeholder is added so the artifact always downloads.
+- **Optional:** To fail the job when ZAP finds issues, remove the `-I` flag from `zap-baseline.py` in **webapp-ci.yml**.
 
 ## Optional: package-lock.json
 

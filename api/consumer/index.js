@@ -133,7 +133,8 @@ async function saveUserS3Link(userId, jobId, s3Key, filename) {
 }
 
 async function processOneMessage(body) {
-    const { jobId, s3Key, bucket, filename, userId, language } = body;
+    const { jobId, s3Key, bucket, filename, userId, language, skipPostprocess } = body;
+    const rawExtract = skipPostprocess === true || skipPostprocess === "true";
     if (!jobId || !s3Key || !bucket) {
         throw new Error("Missing jobId, s3Key or bucket in SQS message");
     }
@@ -152,18 +153,20 @@ async function processOneMessage(body) {
         if (!result) {
             result = await processOCR(tmpPath, language || "eng");
             const text = result.text || "";
-            const blocked = checkBlockedWords(text);
-            if (blocked.blocked) {
-                const reason = (blocked.categories && blocked.categories.length) ? blocked.categories.join(", ") : "Blocked content";
-                await updateJobFailed(jobId, "Blocked: " + reason);
-                return;
-            }
-            const sensitivity = checkSensitivity(text);
-            if (sensitivity.sensitive) {
-                const categories = getUniqueCategories(sensitivity.types, sensitivity.matchedTerms);
-                const reason = categories.length ? categories.join(", ") : "Sensitive content";
-                await updateJobFailed(jobId, "Sensitive: " + reason);
-                return;
+            if (!rawExtract) {
+                const blocked = checkBlockedWords(text);
+                if (blocked.blocked) {
+                    const reason = (blocked.categories && blocked.categories.length) ? blocked.categories.join(", ") : "Blocked content";
+                    await updateJobFailed(jobId, "Blocked: " + reason);
+                    return;
+                }
+                const sensitivity = checkSensitivity(text);
+                if (sensitivity.sensitive) {
+                    const categories = getUniqueCategories(sensitivity.types, sensitivity.matchedTerms);
+                    const reason = categories.length ? categories.join(", ") : "Sensitive content";
+                    await updateJobFailed(jobId, "Sensitive: " + reason);
+                    return;
+                }
             }
             await setCachedOcrResult(buffer, { text: result.text, confidence: result.confidence });
         }

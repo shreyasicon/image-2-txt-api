@@ -34,14 +34,6 @@ export default function SettingsPage() {
     }
   };
 
-  const handleClearCache = () => {
-    if (window.confirm('Clear all saved data? This cannot be undone.')) {
-      localStorage.clear();
-      alert('Cache cleared successfully');
-      window.location.reload();
-    }
-  };
-
   // Don't render protected content until auth has loaded (prevents flash on refresh)
   if (auth?.loading) {
     return (
@@ -81,12 +73,18 @@ export default function SettingsPage() {
             </h2>
             <div className="space-y-4 border-t border-border/50 pt-4">
               <div className="space-y-2">
-                <label className="block text-sm font-medium">Display name</label>
+                <label
+                  htmlFor="display-name"
+                  className="block text-sm font-medium"
+                >
+                  Display name
+                </label>
                 <p className="text-xs text-muted-foreground mb-2">
                   This name is shown in your account. You can change it anytime.
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
                   <input
+                      id="display-name"
                     type="text"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
@@ -101,25 +99,6 @@ export default function SettingsPage() {
             </div>
           </GlassCard>
         )}
-
-        {/* API Configuration */}
-        <GlassCard className="space-y-4">
-          <h2 className="text-xl font-bold">API Configuration</h2>
-          <div className="space-y-4 border-t border-border/50 pt-4">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium">OCR API</label>
-              <p className="text-xs text-muted-foreground">
-                Text extraction powered by our OCR API. No configuration needed.
-              </p>
-            </div>
-
-            <div className="bg-primary/10 border border-primary/30 rounded-lg p-4">
-              <p className="text-sm text-primary">
-                ℹ️ For local development, ensure your environment variables are properly set in .env.local
-              </p>
-            </div>
-          </div>
-        </GlassCard>
 
         {/* Preferences */}
         <GlassCard className="space-y-4">
@@ -143,25 +122,6 @@ export default function SettingsPage() {
               <div className="w-12 h-6 bg-primary/20 rounded-full flex items-center pl-0.5">
                 <div className="w-5 h-5 bg-primary rounded-full"></div>
               </div>
-            </div>
-          </div>
-        </GlassCard>
-
-        {/* Data Management */}
-        <GlassCard className="space-y-4">
-          <h2 className="text-xl font-bold">Data Management</h2>
-          <div className="space-y-4 border-t border-border/50 pt-4">
-            <div className="space-y-2">
-              <p className="text-sm font-medium">Local Storage</p>
-              <p className="text-xs text-muted-foreground mb-3">
-                Your vault items are stored locally in your browser. No data is sent to external servers.
-              </p>
-              <button
-                onClick={handleClearCache}
-                className="px-4 py-2 rounded-lg border border-destructive/50 text-destructive hover:bg-destructive/10 transition-colors font-medium text-sm"
-              >
-                Clear All Data
-              </button>
             </div>
           </div>
         </GlassCard>
@@ -196,7 +156,7 @@ export default function SettingsPage() {
           <h2 className="text-xl font-bold">Support & Resources</h2>
           <div className="space-y-2 border-t border-border/50 pt-4">
             <a
-              href="https://github.com"
+              href="https://github.com/shreyasicon/image-2-txt-api"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors group"

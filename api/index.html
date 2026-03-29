@@ -149,6 +149,11 @@
         .try-section .section-title {
             margin-bottom: 1.5rem;
         }
+
+        .try-subhead {
+            margin-top: 2.25rem;
+            margin-bottom: 1.25rem;
+        }
         
         .try-card {
             background: var(--surface);
@@ -590,8 +595,8 @@
 
         <section class="try-section" id="try">
             <div class="section-title">
-                <h2>Try it <span class="green">with Validation</span></h2>
-                <p style="color:var(--text-muted);font-size:0.9375rem;margin-top:0.5rem;">Upload and extract text with full validation, quality metrics, and script detection (ocr_postprocess).</p>
+                <h2>Try it <span class="green">yourself</span></h2>
+                <p style="color:var(--text-muted);font-size:0.9375rem;margin-top:0.5rem;">Upload and extract with full validation, quality metrics, and script detection (ocr_postprocess).</p>
             </div>
             <div class="try-card">
                 <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
@@ -600,7 +605,28 @@
                     <input type="file" id="fileInput" accept="image/*">
                 </div>
                 <button class="btn-extract" id="submitBtn" onclick="sendImage()" disabled>Extract Text</button>
+            </div>
 
+            <div class="section-title try-subhead">
+                <h2>Or Try <span class="green">without Validation</span></h2>
+                <p style="color:var(--text-muted);font-size:0.9375rem;margin-top:0.5rem;">Upload and extract text only — no Python validation layer (ocr_postprocess). Same OCR and S3 storage.</p>
+                <p style="color:var(--text-muted);font-size:0.8125rem;margin-top:0.35rem;">This path sends <code>skipPostprocess: true</code> (OCR + S3 only; no blocked-word, sensitivity, or quality/script fields).</p>
+            </div>
+            <div class="try-card">
+                <div class="upload-zone" id="uploadZoneNoValidation" onclick="document.getElementById('fileInputNoValidation').click()">
+                    <div class="label">Click or drag an image here</div>
+                    <div class="filename" id="filenameNoValidation"></div>
+                    <input type="file" id="fileInputNoValidation" accept="image/*">
+                </div>
+                <button class="btn-extract" id="submitBtnNoValidation" onclick="sendImageNoValidation()" disabled>Extract Text</button>
+                <div class="result-section" id="resultSectionNoValidation" style="margin-top:1rem;">
+                    <div class="label-sm" style="margin-bottom:0.35rem;">Response (JSON) — no postprocess</div>
+                    <div class="json-block" id="outputNoValidation">{"result": "pending", "data": null}</div>
+                </div>
+            </div>
+
+            <div class="try-card" id="validationResultsWrap" style="display:none;margin-top:1.5rem;">
+                <div class="label-sm" style="margin-bottom:0.75rem;color:var(--text-muted);">With validation — full response and Job ID tools</div>
                 <div class="result-section" id="resultSection">
                     <div class="result-meta">
                         <span class="confidence-badge" id="confidenceBadge"></span>
@@ -640,25 +666,6 @@
                         <div class="fetch-result" id="fetchResultArea" style="display:none; margin-top:0.75rem;"></div>
                     </div>
                 </div>
-
-            </div>
-        </section>
-
-        <section class="try-section" id="try-no-validation">
-            <div class="section-title">
-                <h2>Or Try <span class="green">without Validation</span></h2>
-                <p style="color:var(--text-muted);font-size:0.9375rem;margin-top:0.5rem;">Upload and extract text only — no validation layer (ocr_postprocess). Same OCR and S3 storage. Send <code>skipValidation: true</code> in the request body.</p>
-            </div>
-            <div class="try-card">
-                <div class="upload-zone" id="uploadZoneNoValidation" onclick="document.getElementById('fileInputNoValidation').click()">
-                    <div class="label">Click or drag an image here</div>
-                    <div class="filename" id="filenameNoValidation"></div>
-                    <input type="file" id="fileInputNoValidation" accept="image/*">
-                </div>
-                <button class="btn-extract" id="submitBtnNoValidation" onclick="sendImageNoValidation()" disabled>Extract Text</button>
-                <div class="result-section" id="resultSectionNoValidation" style="margin-top:1rem;">
-                    <div class="json-block" id="outputNoValidation">{"result": "pending", "data": null}</div>
-                </div>
             </div>
         </section>
 
@@ -668,7 +675,7 @@
                 <p style="color:var(--text-muted);font-size:0.9375rem;margin-top:0.5rem;">All endpoints return JSON.</p>
                 <div class="api-base-url-box" style="margin-top:1rem;padding:1rem 1.25rem;background:rgba(0,255,136,0.08);border:1px solid var(--green);border-radius:8px;">
                     <div style="font-size:0.8125rem;color:var(--text-muted);margin-bottom:0.35rem;">Lambda API base URL — use this for POST, GET, PUT, DELETE</div>
-                    <code style="font-size:1rem;word-break:break-all;color:var(--green);">https://xkdvpogqt0.execute-api.us-east-1.amazonaws.com/prod/ocr</code>
+                    <code style="font-size:1rem;word-break:break-all;color:var(--green);">__API_BASE_URL__/ocr</code>
                 </div>
             </div>
 
@@ -714,7 +721,7 @@
     </div>
 
     <script>
-        const DEFAULT_API_BASE = 'https://xkdvpogqt0.execute-api.us-east-1.amazonaws.com/prod';
+        const DEFAULT_API_BASE = '__API_BASE_URL__';
 
         function getApiBase() {
             var origin = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : '';
@@ -746,6 +753,7 @@
         const textPreview = document.getElementById('textPreview');
         const extractedTextRow = document.getElementById('extractedTextRow');
         const copyTextBtn = document.getElementById('copyTextBtn');
+        const validationResultsWrap = document.getElementById('validationResultsWrap');
 
         fileInput.addEventListener('change', () => {
             const file = fileInput.files[0];
@@ -1114,6 +1122,7 @@
             if (!file) return alert('Select an image first');
 
             resultSection.classList.add('visible');
+            if (validationResultsWrap) validationResultsWrap.style.display = 'block';
             if (extractedTextRow) extractedTextRow.style.display = 'none';
             textPreview.textContent = '';
             validationPanel.style.display = 'none';
@@ -1270,13 +1279,13 @@
                             image: dataUrl,
                             language: 'eng',
                             filename: file.name,
-                            skipValidation: true
+                            skipPostprocess: true
                         })
                     });
                 } else {
                     const formData = new FormData();
                     formData.append('image', file);
-                    formData.append('skipValidation', 'true');
+                    formData.append('skipPostprocess', 'true');
                     const url = base ? (base + '/ocr') : '/ocr';
                     res = await fetch(url, { method: 'POST', body: formData });
                 }
@@ -1305,7 +1314,7 @@
                         filename: data.filename || null,
                         jobId: data.jobId || null,
                         s3Key: data.s3Key || null,
-                        skipValidation: true
+                        skipPostprocess: true
                     }
                 };
                 outputNoValidation.innerHTML = formatJson(apiStyle);

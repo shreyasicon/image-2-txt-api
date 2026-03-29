@@ -5,8 +5,11 @@
 const fs = require("fs");
 const path = require("path");
 
-const apiBase = process.env.API_BASE_URL || "";
-const indexPath = path.join(__dirname, "..", "index.html");
+const apiBase = (process.env.API_BASE_URL || "https://xkdvpogqt0.execute-api.us-east-1.amazonaws.com/prod").replace(
+  /\/$/,
+  ""
+);
+const indexPath = process.env.INDEX_HTML_PATH || path.join(__dirname, "..", "index.html");
 
 if (!fs.existsSync(indexPath)) {
     console.warn("index.html not found at", indexPath);

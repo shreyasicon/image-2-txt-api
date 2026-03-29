@@ -321,8 +321,14 @@ export default function VaultPage() {
           <div className="grid md:grid-cols-2 gap-4">
             {/* Search */}
             <div>
-              <label className="block text-sm font-medium mb-2">Search</label>
+              <label
+                htmlFor="vault-search"
+                className="block text-sm font-medium mb-2"
+              >
+                Search
+              </label>
               <input
+                id="vault-search"
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -333,8 +339,14 @@ export default function VaultPage() {
 
             {/* Filter */}
             <div>
-              <label className="block text-sm font-medium mb-2">Filter</label>
+              <label
+                htmlFor="vault-filter"
+                className="block text-sm font-medium mb-2"
+              >
+                Filter
+              </label>
               <select
+                id="vault-filter"
                 value={filter}
                 onChange={(e) => setFilter(e.target.value as typeof filter)}
                 className="w-full px-4 py-2 bg-background/50 border border-border/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"

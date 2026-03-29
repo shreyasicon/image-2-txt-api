@@ -448,7 +448,7 @@ async function deployLambda(roleArn, envOverrides = {}, ocrQueueUrl) {
 
         console.log("Lambda code updated");
 
-        await new Promise(r => setTimeout(r, 60000));
+        await lambda.waitFor("functionUpdated", { FunctionName: FUNCTION_NAME }).promise();
 
         await lambda.updateFunctionConfiguration({
             FunctionName: FUNCTION_NAME,
@@ -712,6 +712,7 @@ async function deployConsumerLambda(consumerRoleArn, queueArn) {
             FunctionName: CONSUMER_FUNCTION_NAME,
             ZipFile: zipBuffer
         }).promise();
+        await lambda.waitFor("functionUpdated", { FunctionName: CONSUMER_FUNCTION_NAME }).promise();
         const updatePayload = {
             FunctionName: CONSUMER_FUNCTION_NAME,
             Role: consumerRoleArn,

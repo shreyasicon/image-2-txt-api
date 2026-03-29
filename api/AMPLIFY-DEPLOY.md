@@ -47,7 +47,39 @@ git push -u origin main
 
 ---
 
-## Option B: Deploy without Git
+## Option B: Git-connected app (this project) — push, then release
+
+The API demo Amplify app is **connected to Git**, so hosting does **not** accept manual zip uploads. To publish what you have locally:
+
+1. Commit and push your changes (`api/index.html`, `amplify.yml`, `scripts/`, etc.).
+2. Either wait for the automatic build on push, or trigger a build from the latest commit:
+
+```bash
+cd api
+npm install
+npm run amplify:release
+```
+
+(`amplify:release` runs `startJob` with `jobType: RELEASE`, which builds from the current branch tip in the remote repo — so you must **push** before the new UI is included.)
+
+Environment variable `API_BASE_URL` (no trailing slash) should still be set under Amplify **App settings → Environment variables** so `preBuild` can inject it into `index.html`.
+
+---
+
+## Option C: Manual zip (`npm run deploy:amplify`) — apps **without** Git only
+
+From the `api/` folder, with AWS credentials configured:
+
+```bash
+npm install
+npm run deploy:amplify
+```
+
+This copies `index.html`, runs `scripts/replace-api-url.js`, zips `index.html`, and uploads via Amplify manual deploy. **This only works** if the Amplify app is **not** connected to a repository. If you see “App is already connected a repository”, use Option B instead.
+
+---
+
+## Option D: Deploy without Git (console zip)
 
 1. In **Amplify Console** → **New app** → **Host web app**.
 2. Choose **Deploy without Git**.

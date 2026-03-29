@@ -3,9 +3,8 @@
 import { useState, useEffect } from 'react';
 import { GlassCard } from '@/components/glass-card';
 import { GlowButton } from '@/components/glow-button';
-import { LoadingSpinner } from '@/components/loading-spinner';
 import { translateText, translateHealth } from '@/lib/api';
-import { Languages, AlertCircle, Copy, Check, Clock } from 'lucide-react';
+import { Languages, AlertCircle, Copy, Check, Clock, Loader2 } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
 
 const TRANSLATION_HISTORY_KEY = 'translationHistory';
@@ -25,6 +24,9 @@ const LANG_OPTIONS = [
   { code: 'it', name: 'Italian' },
   { code: 'pt', name: 'Portuguese' },
 ] as const;
+
+/** Keeps payloads within a safe size for API Gateway / JSON bodies. */
+const MAX_TRANSLATE_INPUT_CHARS = 8000;
 
 export default function TranslatePage() {
   const auth = useAuth();
@@ -66,9 +68,13 @@ export default function TranslatePage() {
   const selectAll = () => setSelectedLangs(new Set(LANG_OPTIONS.map((l) => l.code)));
   const clearAll = () => setSelectedLangs(new Set());
 
+  const trimmed = inputText.trim();
+  const hasTargets = selectedLangs.size > 0;
+  const canSubmit = trimmed.length > 0 && hasTargets && !loading;
+
   const handleTranslate = async () => {
     const text = inputText.trim();
-    if (!text) return;
+    if (!text || selectedLangs.size === 0) return;
     setLoading(true);
     setResult(null);
     try {
@@ -119,15 +125,42 @@ export default function TranslatePage() {
       )}
 
       <GlassCard className="space-y-4">
-        <h2 className="text-lg font-semibold">Try it yourself</h2>
         <div>
-          <label className="block text-sm font-medium text-muted-foreground mb-2">Enter text to translate</label>
+          <h2 className="text-lg font-semibold">Try it yourself (with validation)</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Text is checked before sending: non-empty after trim, at least one target language, and a maximum
+            length ({MAX_TRANSLATE_INPUT_CHARS.toLocaleString()} characters) to keep requests within API limits.
+          </p>
+        </div>
+        <div>
+          <label
+            htmlFor="translate-text"
+            className="block text-sm font-medium text-muted-foreground mb-2"
+          >
+            Enter text to translate
+          </label>
           <textarea
+            id="translate-text"
+            aria-describedby="translate-text-validation"
+            maxLength={MAX_TRANSLATE_INPUT_CHARS}
             className="w-full min-h-[120px] rounded-lg border border-border bg-input px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             placeholder="Hello world"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
           />
+          <div
+            id="translate-text-validation"
+            className="flex flex-wrap items-center justify-between gap-2 mt-2 text-xs text-muted-foreground"
+          >
+            <span>Whitespace is trimmed before send. Maximum length enforced below.</span>
+            <span
+              className={
+                inputText.length >= MAX_TRANSLATE_INPUT_CHARS * 0.9 ? 'text-amber-500 font-medium' : ''
+              }
+            >
+              {inputText.length.toLocaleString()} / {MAX_TRANSLATE_INPUT_CHARS.toLocaleString()}
+            </span>
+          </div>
         </div>
         <div>
           <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -153,9 +186,14 @@ export default function TranslatePage() {
               </label>
             ))}
           </div>
+          {!hasTargets && (
+            <p className="text-sm text-amber-600 dark:text-amber-500 mt-2" role="status">
+              Select at least one target language to translate.
+            </p>
+          )}
         </div>
-        <GlowButton onClick={handleTranslate} disabled={loading || !inputText.trim()}>
-          {loading ? <LoadingSpinner className="w-4 h-4" /> : 'Translate'}
+        <GlowButton onClick={handleTranslate} disabled={!canSubmit}>
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : 'Translate'}
         </GlowButton>
       </GlassCard>
 

@@ -84,6 +84,10 @@ export interface OCRExtractResult {
 /** Optional auth: pass getToken (e.g. from useAuth().getIdToken) to link the job to the signed-in user. */
 export interface OcrAuthOptions {
   getToken?: () => Promise<string | null>;
+  /**
+   * When true, API skips ocr-postprocess (blocked words, sensitivity, quality/script). Same OCR engine and S3/DynamoDB.
+   */
+  skipPostprocess?: boolean;
 }
 
 const OCR_CACHE_PREFIX = 'ocr_result_';
@@ -229,6 +233,7 @@ export async function extractTextFromImageAsync(
       image: dataUrl,
       language: 'eng',
       filename: imageFile.name,
+      ...(options?.skipPostprocess ? { skipPostprocess: true } : {}),
     }),
   });
   const json = await response.json().catch(() => ({}));
@@ -286,6 +291,7 @@ export async function extractTextFromImage(
         image: dataUrl,
         language: 'eng',
         filename: imageFile.name,
+        ...(options?.skipPostprocess ? { skipPostprocess: true } : {}),
       }),
     });
 

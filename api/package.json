@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "deploy:amplify": "node deploy-api-amplify.js",
+    "amplify:release": "node scripts/trigger-amplify-release.js"
+  },
   "dependencies": {
     "archiver": "^7.0.1",
     "aws-sdk": "^2.1693.0"
