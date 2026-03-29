@@ -19,14 +19,139 @@ interface VaultItem {
   tags?: string[];
 }
 
+type ExtractedVaultImage = { id: string; jobId: string; filename: string; date: string; dataUrl: string };
+
+interface UploadedImagesSectionProps {
+  s3Loading: boolean;
+  hasAnyUploadedImage: boolean;
+  s3Items: UserS3Link[];
+  extractedImages: ExtractedVaultImage[];
+  localVaultImages: VaultItem[];
+  onRemoveExtractedImage: (id: string) => void;
+  onDeleteVaultImage: (id: string) => void;
+}
+
+/** Split out to keep `VaultPage` cognitive complexity within Sonar limits. */
+function UploadedImagesSection({
+  s3Loading,
+  hasAnyUploadedImage,
+  s3Items,
+  extractedImages,
+  localVaultImages,
+  onRemoveExtractedImage,
+  onDeleteVaultImage,
+}: UploadedImagesSectionProps) {
+  if (s3Loading && !hasAnyUploadedImage) {
+    return (
+      <GlassCard className="py-8 text-center text-muted-foreground">Loading your uploaded images…</GlassCard>
+    );
+  }
+  if (hasAnyUploadedImage) {
+    return (
+      <ul className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        {s3Items.map((link) => (
+          <li key={`s3-${link.jobId}`}>
+            <GlassCard className="overflow-hidden p-0">
+              <div className="aspect-square relative bg-muted">
+                {link.previewUrl ? (
+                  <img
+                    src={link.previewUrl}
+                    alt={link.filename || 'Uploaded image'}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                    <ImageIcon className="w-12 h-12" aria-hidden />
+                  </div>
+                )}
+              </div>
+              <div className="p-3">
+                <p className="text-xs text-muted-foreground mb-0.5">Cloud upload</p>
+                <p className="text-sm font-medium truncate" title={link.filename}>{link.filename || link.jobId}</p>
+                {link.createdAt && (
+                  <p className="text-xs text-muted-foreground mt-1">{new Date(link.createdAt).toLocaleString()}</p>
+                )}
+              </div>
+            </GlassCard>
+          </li>
+        ))}
+        {extractedImages.map((img) => (
+          <li key={`ex-${img.id}`}>
+            <GlassCard className="overflow-hidden p-0 group relative">
+              <div className="aspect-square relative bg-muted">
+                <img
+                  src={img.dataUrl}
+                  alt={img.filename}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="p-3 flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground mb-0.5">From Upload</p>
+                  <p className="text-sm font-medium truncate" title={img.filename}>{img.filename}</p>
+                  <p className="text-xs text-muted-foreground">{img.date}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onRemoveExtractedImage(img.id)}
+                  className="p-2 rounded-lg border border-destructive/50 text-destructive hover:bg-destructive/10 transition-colors flex-shrink-0"
+                  title="Remove from vault"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </GlassCard>
+          </li>
+        ))}
+        {localVaultImages.map((item) => (
+          <li key={`lv-${item.id}`}>
+            <GlassCard className="overflow-hidden p-0 group relative">
+              <div className="aspect-square relative bg-muted">
+                <img
+                  src={item.content}
+                  alt={item.title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="p-3 flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground mb-0.5">Saved to vault</p>
+                  <p className="text-sm font-medium truncate" title={item.title}>{item.title}</p>
+                  <p className="text-xs text-muted-foreground">{item.date}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onDeleteVaultImage(item.id)}
+                  className="p-2 rounded-lg border border-destructive/50 text-destructive hover:bg-destructive/10 transition-colors flex-shrink-0"
+                  title="Remove from vault"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </GlassCard>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+  if (!s3Loading) {
+    return (
+      <GlassCard className="py-6 text-center text-muted-foreground space-y-2">
+        <p>Images you upload via the Upload page will appear here.</p>
+        <p className="text-sm">Cloud uploads (when signed in) and images you add with &quot;Add New Content&quot; show here too.</p>
+      </GlassCard>
+    );
+  }
+  return null;
+}
+
 export default function VaultPage() {
   const auth = useAuth();
   const router = useRouter();
   const [items, setItems] = useState<VaultItem[]>([]);
   const [s3Items, setS3Items] = useState<UserS3Link[]>([]);
-  const [s3Error, setS3Error] = useState('');
   const [s3Loading, setS3Loading] = useState(false);
-  const [extractedImages, setExtractedImages] = useState<{ id: string; jobId: string; filename: string; date: string; dataUrl: string }[]>([]);
+  const [extractedImages, setExtractedImages] = useState<ExtractedVaultImage[]>([]);
   const [filter, setFilter] = useState<'all' | 'caption' | 'text'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -37,14 +162,15 @@ export default function VaultPage() {
   const [addImageSaving, setAddImageSaving] = useState(false);
 
   const loadS3Links = useCallback(async () => {
-    if (!auth?.user || !auth.getIdToken) return;
-    setS3Error('');
+    const getToken = auth?.getIdToken;
+    if (!auth?.user || !getToken) return;
     setS3Loading(true);
     try {
-      const data = await listMyS3Links(() => auth.getIdToken!());
+      const data = await listMyS3Links(() => getToken());
       setS3Items(data?.items ?? []);
       // Do not show error on failure; empty list with friendly empty state is enough
-    } catch {
+    } catch (error) {
+      console.error('Failed to load S3 links for vault:', error);
       setS3Items([]);
     } finally {
       setS3Loading(false);
@@ -82,15 +208,16 @@ export default function VaultPage() {
     try {
       const raw = localStorage.getItem(EXTRACTED_IMAGES_KEY);
       setExtractedImages(raw ? JSON.parse(raw) : []);
-    } catch (_) {
+    } catch (error) {
+      console.error('Failed to read extracted images from storage:', error);
       setExtractedImages([]);
     }
   }, []);
   useEffect(() => {
     loadExtractedImages();
     const onUpdate = () => loadExtractedImages();
-    window.addEventListener('vault-stats-update', onUpdate);
-    return () => window.removeEventListener('vault-stats-update', onUpdate);
+    globalThis.addEventListener('vault-stats-update', onUpdate);
+    return () => globalThis.removeEventListener('vault-stats-update', onUpdate);
   }, [loadExtractedImages]);
 
   // If auth never resolves (Cognito hang), redirect after auth timeout so page doesn't hang
@@ -122,7 +249,7 @@ export default function VaultPage() {
   }
 
   const handleDelete = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this item?')) {
+    if (globalThis.confirm('Are you sure you want to delete this item?')) {
       const updated = items.filter((item) => item.id !== id);
       setItems(updated);
       localStorage.setItem('vaultItems', JSON.stringify(updated));
@@ -136,7 +263,7 @@ export default function VaultPage() {
   };
 
   const handleClearAll = () => {
-    if (window.confirm('Are you sure you want to delete all vault items? This cannot be undone.')) {
+    if (globalThis.confirm('Are you sure you want to delete all vault items? This cannot be undone.')) {
       setItems([]);
       localStorage.setItem('vaultItems', JSON.stringify([]));
     }
@@ -191,6 +318,12 @@ export default function VaultPage() {
   const hasAnyUploadedImage =
     s3Items.length > 0 || extractedImages.length > 0 || localVaultImages.length > 0;
 
+  const noCaptionsOrText = nonImageVaultItems.length === 0;
+  const emptyGridTitle = noCaptionsOrText ? 'No captions or text yet' : 'No matching items';
+  const emptyGridDescription = noCaptionsOrText
+    ? 'Save captions or text to the vault, or use Upload to extract text. Images are listed above.'
+    : 'Try another search or filter. Images stay in the section above.';
+
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <div className="space-y-8">
@@ -219,101 +352,15 @@ export default function VaultPage() {
           <p className="text-sm text-muted-foreground">
             Thumbnails from the Upload page, images stored on your account (S3), and other images you saved to the vault.
           </p>
-          {s3Loading && !hasAnyUploadedImage ? (
-            <GlassCard className="py-8 text-center text-muted-foreground">Loading your uploaded images…</GlassCard>
-          ) : hasAnyUploadedImage ? (
-            <ul className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {s3Items.map((link) => (
-                <li key={`s3-${link.jobId}`}>
-                  <GlassCard className="overflow-hidden p-0">
-                    <div className="aspect-square relative bg-muted">
-                      {link.previewUrl ? (
-                        <img
-                          src={link.previewUrl}
-                          alt={link.filename || 'Uploaded image'}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                          <ImageIcon className="w-12 h-12" aria-hidden />
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-3">
-                      <p className="text-xs text-muted-foreground mb-0.5">Cloud upload</p>
-                      <p className="text-sm font-medium truncate" title={link.filename}>{link.filename || link.jobId}</p>
-                      {link.createdAt && (
-                        <p className="text-xs text-muted-foreground mt-1">{new Date(link.createdAt).toLocaleString()}</p>
-                      )}
-                    </div>
-                  </GlassCard>
-                </li>
-              ))}
-              {extractedImages.map((img) => (
-                <li key={`ex-${img.id}`}>
-                  <GlassCard className="overflow-hidden p-0 group relative">
-                    <div className="aspect-square relative bg-muted">
-                      <img
-                        src={img.dataUrl}
-                        alt={img.filename}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="p-3 flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-xs text-muted-foreground mb-0.5">From Upload</p>
-                        <p className="text-sm font-medium truncate" title={img.filename}>{img.filename}</p>
-                        <p className="text-xs text-muted-foreground">{img.date}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveExtractedImage(img.id)}
-                        className="p-2 rounded-lg border border-destructive/50 text-destructive hover:bg-destructive/10 transition-colors flex-shrink-0"
-                        title="Remove from vault"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </GlassCard>
-                </li>
-              ))}
-              {localVaultImages.map((item) => (
-                <li key={`lv-${item.id}`}>
-                  <GlassCard className="overflow-hidden p-0 group relative">
-                    <div className="aspect-square relative bg-muted">
-                      <img
-                        src={item.content}
-                        alt={item.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="p-3 flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-xs text-muted-foreground mb-0.5">Saved to vault</p>
-                        <p className="text-sm font-medium truncate" title={item.title}>{item.title}</p>
-                        <p className="text-xs text-muted-foreground">{item.date}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(item.id)}
-                        className="p-2 rounded-lg border border-destructive/50 text-destructive hover:bg-destructive/10 transition-colors flex-shrink-0"
-                        title="Remove from vault"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </GlassCard>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            !s3Loading && (
-              <GlassCard className="py-6 text-center text-muted-foreground space-y-2">
-                <p>Images you upload via the Upload page will appear here.</p>
-                <p className="text-sm">Cloud uploads (when signed in) and images you add with &quot;Add New Content&quot; show here too.</p>
-              </GlassCard>
-            )
-          )}
+          <UploadedImagesSection
+            s3Loading={s3Loading}
+            hasAnyUploadedImage={hasAnyUploadedImage}
+            s3Items={s3Items}
+            extractedImages={extractedImages}
+            localVaultImages={localVaultImages}
+            onRemoveExtractedImage={handleRemoveExtractedImage}
+            onDeleteVaultImage={handleDelete}
+          />
         </div>
 
         {/* Search and Filter */}
@@ -439,14 +486,12 @@ export default function VaultPage() {
             </div>
             <div>
               <h3 className="text-xl font-bold mb-2">
-                {nonImageVaultItems.length === 0 ? 'No captions or text yet' : 'No matching items'}
+                {emptyGridTitle}
               </h3>
               <p className="text-muted-foreground mb-6">
-                {nonImageVaultItems.length === 0
-                  ? 'Save captions or text to the vault, or use Upload to extract text. Images are listed above.'
-                  : 'Try another search or filter. Images stay in the section above.'}
+                {emptyGridDescription}
               </p>
-              {nonImageVaultItems.length === 0 ? (
+              {noCaptionsOrText ? (
                 <Link href="/dashboard/upload">
                   <GlowButton variant="primary">Upload Content</GlowButton>
                 </Link>

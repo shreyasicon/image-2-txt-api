@@ -31,7 +31,7 @@ export function useAuth(): AuthContextValue | null {
   return useContext(AuthContext);
 }
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: Readonly<{ children: React.ReactNode }>) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -57,13 +57,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const attrs = await fetchUserAttributes();
         name = (attrs?.name as string) || undefined;
-      } catch (_) {}
+      } catch (error) {
+        console.error('Failed to fetch Cognito user attributes:', error);
+      }
       setUser({
         userId: currentUser.userId,
         username: currentUser.username,
         name,
       });
-    } catch {
+    } catch (error) {
+      console.error('Failed to resolve current user:', error);
       if (!done) setUser(null);
     } finally {
       done = true;
@@ -95,7 +98,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const session = await fetchAuthSession({ tokens: true });
       const token = session.tokens?.idToken?.toString();
       return token || null;
-    } catch {
+    } catch (error) {
+      console.error('Failed to fetch auth session for ID token:', error);
       return null;
     }
   }, []);
