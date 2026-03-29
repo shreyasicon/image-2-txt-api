@@ -51,7 +51,9 @@ export default function TranslatePage() {
         const raw = localStorage.getItem(TRANSLATION_HISTORY_KEY);
         const arr = raw ? JSON.parse(raw) : [];
         setHistory(Array.isArray(arr) ? arr : []);
-      } catch (_) {}
+      } catch (error) {
+        console.error('Failed to load translation history:', error);
+      }
     }
     return () => clearTimeout(t);
   }, []);
@@ -94,7 +96,9 @@ export default function TranslatePage() {
           const next = [entry, ...(Array.isArray(arr) ? arr : [])].slice(0, MAX_HISTORY);
           localStorage.setItem(TRANSLATION_HISTORY_KEY, JSON.stringify(next));
           setHistory(next);
-        } catch (_) {}
+        } catch (error) {
+          console.error('Failed to persist translation history:', error);
+        }
       }
     } finally {
       setLoading(false);
@@ -187,9 +191,9 @@ export default function TranslatePage() {
             ))}
           </div>
           {!hasTargets && (
-            <p className="text-sm text-amber-600 dark:text-amber-500 mt-2" role="status">
+            <output className="block text-sm text-amber-600 dark:text-amber-500 mt-2" aria-live="polite">
               Select at least one target language to translate.
-            </p>
+            </output>
           )}
         </div>
         <GlowButton onClick={handleTranslate} disabled={!canSubmit}>

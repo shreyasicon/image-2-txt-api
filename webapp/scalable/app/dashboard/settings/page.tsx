@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { GlassCard } from '@/components/glass-card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/components/auth-provider';
-import { Github, ExternalLink, User } from 'lucide-react';
+import { GitBranch, ExternalLink, User } from 'lucide-react';
 
 export default function SettingsPage() {
   const auth = useAuth();
@@ -51,6 +51,10 @@ export default function SettingsPage() {
     );
   }
 
+  let saveProfileLabel = 'Save';
+  if (nameSaving) saveProfileLabel = 'Saving…';
+  else if (nameSaved) saveProfileLabel = 'Saved';
+
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <div className="space-y-8">
@@ -92,7 +96,7 @@ export default function SettingsPage() {
                     className="flex-1 min-w-[200px] rounded-lg border border-border bg-input px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                   <Button onClick={handleSaveName} disabled={nameSaving || !displayName.trim()}>
-                    {nameSaving ? 'Saving…' : nameSaved ? 'Saved' : 'Save'}
+                    {saveProfileLabel}
                   </Button>
                 </div>
               </div>
@@ -162,7 +166,7 @@ export default function SettingsPage() {
               className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors group"
             >
               <div className="flex items-center gap-3">
-                <Github className="w-5 h-5 text-primary" />
+                <GitBranch className="w-5 h-5 text-primary" />
                 <span className="font-medium group-hover:text-foreground transition-colors">GitHub Repository</span>
               </div>
               <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />

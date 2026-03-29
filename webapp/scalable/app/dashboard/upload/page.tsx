@@ -6,7 +6,6 @@ import { useAuth } from '@/components/auth-provider';
 import { UploadCard } from '@/components/upload-card';
 import { OCRResultCard } from '@/components/ocr-result-card';
 import { GlassCard } from '@/components/glass-card';
-import { GlowButton } from '@/components/glow-button';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import {
   extractTextFromImage,
@@ -62,15 +61,18 @@ export default function UploadPage() {
                 dataUrl,
               });
               localStorage.setItem(EXTRACTED_IMAGES_KEY, JSON.stringify(list.slice(0, MAX_EXTRACTED_IMAGES)));
-            } catch (_) {}
-            window.dispatchEvent(new CustomEvent('vault-stats-update'));
+            } catch (error) {
+              console.error('Failed to persist extracted image:', error);
+            }
+            globalThis.dispatchEvent(new CustomEvent('vault-stats-update'));
           };
           reader.readAsDataURL(file);
         } else {
-          window.dispatchEvent(new CustomEvent('vault-stats-update'));
+          globalThis.dispatchEvent(new CustomEvent('vault-stats-update'));
         }
       }
     } catch (error) {
+      console.error('OCR extraction failed:', error);
       setOcrResult({
         text: '',
         confidence: 0,

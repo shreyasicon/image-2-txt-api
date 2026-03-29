@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEventHandler } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { Button } from '@/components/ui/button';
@@ -51,7 +51,7 @@ export default function AuthPage() {
     return centerShell(<p className="text-center text-muted-foreground">Signed in. Redirecting...</p>);
   }
 
-  const handleSignIn = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSignIn: FormEventHandler<HTMLFormElement> = async (e) => {
     e.preventDefault();
     if (!auth) return;
     setError('');
@@ -66,7 +66,7 @@ export default function AuthPage() {
     }
   };
 
-  const handleSignUp = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSignUp: FormEventHandler<HTMLFormElement> = async (e) => {
     e.preventDefault();
     if (!auth) return;
     setError('');

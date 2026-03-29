@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, type FormEvent, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, type FormEventHandler, type ReactNode } from 'react';
 import Image from 'next/image';
 import { GlassCard } from '@/components/glass-card';
 import { GlowButton } from '@/components/glow-button';
@@ -109,7 +109,7 @@ export default function FindImagesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isUnsplashConfigured]);
 
-  const handleSearch = (e: FormEvent<HTMLFormElement>) => {
+  const handleSearch: FormEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
     const q = searchInput.trim();
     setQuery(q);

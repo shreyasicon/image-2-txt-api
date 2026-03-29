@@ -25,16 +25,18 @@ export default function DashboardPage() {
   const [localExtractedCount, setLocalExtractedCount] = useState(0);
 
   const fetchImagesExtractedCount = useCallback(async () => {
-    if (!auth?.user || !auth.getIdToken) return;
+    const getIdToken = auth?.getIdToken;
+    if (!auth?.user || !getIdToken) return;
     try {
       const [jobsRes, s3Res] = await Promise.all([
-        listMyOcrJobs(() => auth!.getIdToken()),
-        listMyS3Links(() => auth!.getIdToken()),
+        listMyOcrJobs(() => getIdToken()),
+        listMyS3Links(() => getIdToken()),
       ]);
       const jobs = jobsRes?.jobs?.length ?? 0;
       const s3 = s3Res?.items?.length ?? 0;
       setImagesExtractedCount(Math.max(jobs, s3));
-    } catch (_) {
+    } catch (error) {
+      console.error('Failed to fetch OCR / S3 counts:', error);
       setImagesExtractedCount(0);
     }
   }, [auth?.user, auth?.getIdToken]);
@@ -58,7 +60,9 @@ export default function DashboardPage() {
         const arr = JSON.parse(raw);
         setTranslationsCount(Array.isArray(arr) ? arr.length : 0);
       }
-    } catch (_) {}
+    } catch (error) {
+      console.error('Failed to read translation history count:', error);
+    }
   }, []);
 
   useEffect(() => {
@@ -72,13 +76,14 @@ export default function DashboardPage() {
         const raw = localStorage.getItem('extractedImages');
         const list = raw ? JSON.parse(raw) : [];
         setLocalExtractedCount(Array.isArray(list) ? list.length : 0);
-      } catch (_) {
+      } catch (error) {
+        console.error('Failed to read extractedImages:', error);
         setLocalExtractedCount(0);
       }
     };
     onUpdate();
-    window.addEventListener('vault-stats-update', onUpdate);
-    return () => window.removeEventListener('vault-stats-update', onUpdate);
+    globalThis.addEventListener('vault-stats-update', onUpdate);
+    return () => globalThis.removeEventListener('vault-stats-update', onUpdate);
   }, [fetchImagesExtractedCount]);
 
   const vaultCount = recentItems.length;
