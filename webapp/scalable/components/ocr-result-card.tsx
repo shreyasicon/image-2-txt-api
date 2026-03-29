@@ -3,12 +3,12 @@
 import React, { useState } from 'react';
 import { GlassCard } from '@/components/glass-card';
 import { Copy, Check } from 'lucide-react';
-import type { OCRExtractResult, OCRQuality, OCRQualityMetrics, OCRScript } from '@/lib/api';
+import type { OCRExtractResult, OCRQualityMetrics } from '@/lib/api';
 import { formatConfidence } from '@/lib/api';
 
 interface OCRResultCardProps extends OCRExtractResult {}
 
-export function OCRResultCard(props: OCRResultCardProps) {
+export function OCRResultCard(props: Readonly<OCRResultCardProps>) {
   const { text, confidence, uploadValidation, quality, script } = props;
   const [copiedText, setCopiedText] = useState(false);
 
@@ -21,9 +21,10 @@ export function OCRResultCard(props: OCRResultCardProps) {
     setTimeout(() => setCopiedText(false), 2000);
   };
 
-  const scriptLabel = script?.primaryScript
-    ? (script.likelyEnglish ? 'English' : script.primaryScript)
-    : null;
+  let scriptLabel: string | null = null;
+  if (script?.primaryScript) {
+    scriptLabel = script.likelyEnglish ? 'English' : script.primaryScript;
+  }
 
   return (
     <GlassCard className="space-y-4">
@@ -81,13 +82,15 @@ export function OCRResultCard(props: OCRResultCardProps) {
   );
 }
 
-function MetricsOnly({ metrics }: { metrics: OCRQualityMetrics }) {
-  const alpha =
-    metrics.alphaRatio != null
-      ? typeof metrics.alphaRatio === 'number' && metrics.alphaRatio <= 1
-        ? `${(metrics.alphaRatio * 100).toFixed(1)}%`
-        : String(metrics.alphaRatio)
-      : null;
+function MetricsOnly({ metrics }: Readonly<{ metrics: OCRQualityMetrics }>) {
+  let alpha: string | null = null;
+  if (metrics.alphaRatio != null) {
+    if (typeof metrics.alphaRatio === 'number' && metrics.alphaRatio <= 1) {
+      alpha = `${(metrics.alphaRatio * 100).toFixed(1)}%`;
+    } else {
+      alpha = String(metrics.alphaRatio);
+    }
+  }
   return (
     <div className="text-muted-foreground">
       <span className="font-medium text-foreground">Metrics</span>

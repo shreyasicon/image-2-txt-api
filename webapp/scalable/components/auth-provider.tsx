@@ -95,7 +95,7 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
   const getIdToken = useCallback(async (): Promise<string | null> => {
     if (!isCognitoConfigured) return null;
     try {
-      const session = await fetchAuthSession({ tokens: true });
+      const session = await fetchAuthSession();
       const token = session.tokens?.idToken?.toString();
       return token || null;
     } catch (error) {

@@ -2,17 +2,16 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-interface GlowButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  children: React.ReactNode;
+type GlowButtonProps = Omit<React.ComponentProps<typeof Button>, 'variant'> & {
   variant?: 'primary' | 'secondary' | 'outline';
-}
+};
 
-export function GlowButton({ 
-  children, 
+export function GlowButton({
+  children,
   variant = 'primary',
   className,
-  ...props 
-}: GlowButtonProps) {
+  ...props
+}: Readonly<GlowButtonProps>) {
   const variants = {
     primary: 'bg-primary text-primary-foreground hover:shadow-[0_0_20px_rgba(0,255,255,0.8)] border-primary',
     secondary: 'bg-secondary text-secondary-foreground hover:shadow-[0_0_20px_rgba(91,33,182,0.6)]',
