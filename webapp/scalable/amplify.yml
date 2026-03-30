@@ -26,6 +26,10 @@ frontend:
           value: "public, max-age=31536000, immutable"
         - key: "X-Content-Type-Options"
           value: "nosniff"
+        - key: "Permissions-Policy"
+          value: "camera=(), microphone=(), geolocation=(), payment=()"
+        - key: "Cross-Origin-Resource-Policy"
+          value: "same-origin"
     # Cache other static assets (images/fonts) for a week
     - pattern: "**/*.{png,jpg,jpeg,gif,webp,svg,ico,woff,woff2,ttf,eot}"
       headers:
@@ -48,6 +52,8 @@ frontend:
           value: "same-origin"
         - key: "Cross-Origin-Resource-Policy"
           value: "same-origin"
+        - key: "Cross-Origin-Embedder-Policy"
+          value: "credentialless"
         - key: "Content-Security-Policy"
           value: "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; frame-src 'none'; object-src 'none'; img-src 'self' data: blob: https://images.unsplash.com https://plus.unsplash.com https://*.unsplash.com https://*.amazonaws.com; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://xkdvpogqt0.execute-api.us-east-1.amazonaws.com https://t3jb8c44xi.execute-api.us-east-1.amazonaws.com https://api.unsplash.com https://cognito-idp.us-east-1.amazonaws.com https://cognito-idp.eu-west-1.amazonaws.com https://cognito-idp.eu-west-2.amazonaws.com https://cognito-idp.eu-central-1.amazonaws.com https://vitals.vercel-insights.com https://*.amazonaws.com; upgrade-insecure-requests"
     - pattern: "robots.txt"
@@ -66,5 +72,7 @@ frontend:
           value: "same-origin"
         - key: "Cross-Origin-Resource-Policy"
           value: "same-origin"
+        - key: "Cross-Origin-Embedder-Policy"
+          value: "credentialless"
         - key: "Content-Security-Policy"
           value: "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; frame-src 'none'; object-src 'none'; img-src 'self' data: blob: https://images.unsplash.com https://plus.unsplash.com https://*.unsplash.com https://*.amazonaws.com; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://xkdvpogqt0.execute-api.us-east-1.amazonaws.com https://t3jb8c44xi.execute-api.us-east-1.amazonaws.com https://api.unsplash.com https://cognito-idp.us-east-1.amazonaws.com https://cognito-idp.eu-west-1.amazonaws.com https://cognito-idp.eu-west-2.amazonaws.com https://cognito-idp.eu-central-1.amazonaws.com https://vitals.vercel-insights.com https://*.amazonaws.com; upgrade-insecure-requests"
