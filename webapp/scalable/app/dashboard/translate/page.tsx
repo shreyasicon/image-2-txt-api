@@ -129,13 +129,7 @@ export default function TranslatePage() {
       )}
 
       <GlassCard className="space-y-4">
-        <div>
-          <h2 className="text-lg font-semibold">Try it yourself (with validation)</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Text is checked before sending: non-empty after trim, at least one target language, and a maximum
-            length ({MAX_TRANSLATE_INPUT_CHARS.toLocaleString()} characters) to keep requests within API limits.
-          </p>
-        </div>
+        <h2 className="text-lg font-semibold">Try it yourself</h2>
         <div>
           <label
             htmlFor="translate-text"
@@ -145,19 +139,16 @@ export default function TranslatePage() {
           </label>
           <textarea
             id="translate-text"
-            aria-describedby="translate-text-validation"
+            aria-describedby="translate-char-count"
             maxLength={MAX_TRANSLATE_INPUT_CHARS}
             className="w-full min-h-[120px] rounded-lg border border-border bg-input px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             placeholder="Hello world"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
           />
-          <div
-            id="translate-text-validation"
-            className="flex flex-wrap items-center justify-between gap-2 mt-2 text-xs text-muted-foreground"
-          >
-            <span>Whitespace is trimmed before send. Maximum length enforced below.</span>
+          <div className="flex justify-end mt-2 text-xs text-muted-foreground">
             <span
+              id="translate-char-count"
               className={
                 inputText.length >= MAX_TRANSLATE_INPUT_CHARS * 0.9 ? 'text-amber-500 font-medium' : ''
               }
