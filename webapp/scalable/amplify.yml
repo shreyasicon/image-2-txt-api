@@ -1,4 +1,6 @@
-# Git-connected Amplify: set these in App settings → Environment variables:
+# Git-connected Amplify: in the Amplify app, set "Monorepo" / App root to `webapp/scalable`
+# so builds use this file and `npm run build` from that folder.
+# App settings → Environment variables:
 #   NEXT_PUBLIC_COGNITO_USER_POOL_ID, NEXT_PUBLIC_COGNITO_CLIENT_ID, NEXT_PUBLIC_AWS_REGION
 # Optional: NEXT_PUBLIC_OCR_API_BASE, NEXT_PUBLIC_TRANSLATE_API_BASE, NEXT_PUBLIC_UNSPLASH_ACCESS_KEY
 # If you change API hosts/regions, update Content-Security-Policy customHeaders below to match.

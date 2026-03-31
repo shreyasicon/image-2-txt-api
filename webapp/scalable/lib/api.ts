@@ -466,7 +466,9 @@ export async function translateHealth(): Promise<boolean> {
     const base = trimTrailingSlashes(TRANSLATE_API_BASE || DEFAULT_TRANSLATE_API_BASE);
     const res = await fetch(`${base}/health`);
     const data = await res.json().catch(() => ({}));
-    return res.ok && (data?.status === 'ok' || data?.status === true);
+    if (!res.ok) return false;
+    const s = data?.status;
+    return s === 'ok' || s === true || s === 'healthy' || data?.healthy === true;
   } catch {
     return false;
   }

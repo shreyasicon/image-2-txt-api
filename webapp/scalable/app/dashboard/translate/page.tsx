@@ -35,6 +35,7 @@ export default function TranslatePage() {
   const [result, setResult] = useState<{ original_text: string; source_lang: string; translations: Record<string, string> } | null>(null);
   const [loading, setLoading] = useState(false);
   const [apiDown, setApiDown] = useState(false);
+  const [translateError, setTranslateError] = useState<string | null>(null);
   const [history, setHistory] = useState<SavedTranslation[]>([]);
 
   useEffect(() => {
@@ -79,10 +80,15 @@ export default function TranslatePage() {
     if (!text || selectedLangs.size === 0) return;
     setLoading(true);
     setResult(null);
+    setTranslateError(null);
     try {
       const targetList = selectedLangs.size > 0 ? Array.from(selectedLangs) : LANG_OPTIONS.map((l) => l.code);
       const data = await translateText(text, { target_languages: targetList });
-      setResult(data || null);
+      if (!data) {
+        setTranslateError('Translation did not return a result. Check the API or try again.');
+        return;
+      }
+      setResult(data);
       if (data && typeof localStorage !== 'undefined') {
         const entry: SavedTranslation = {
           original_text: data.original_text,
@@ -117,7 +123,7 @@ export default function TranslatePage() {
       <div>
         <h1 className="text-3xl font-orbitron font-bold flex items-center gap-2">
           <Languages className="w-8 h-8 text-primary" />
-          Text to Multiple Languages API
+          Multi-language translation
         </h1>
       </div>
 
@@ -129,7 +135,6 @@ export default function TranslatePage() {
       )}
 
       <GlassCard className="space-y-4">
-        <h2 className="text-lg font-semibold">Try it yourself</h2>
         <div>
           <label
             htmlFor="translate-text"
@@ -187,6 +192,15 @@ export default function TranslatePage() {
             </output>
           )}
         </div>
+        {translateError && (
+          <div
+            className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-destructive text-sm"
+            role="alert"
+          >
+            <AlertCircle className="w-5 h-5 shrink-0" />
+            <span>{translateError}</span>
+          </div>
+        )}
         <GlowButton onClick={handleTranslate} disabled={!canSubmit}>
           {loading ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : 'Translate'}
         </GlowButton>
