@@ -25,9 +25,6 @@ const LANG_OPTIONS = [
   { code: 'pt', name: 'Portuguese' },
 ] as const;
 
-/** Keeps payloads within a safe size for API Gateway / JSON bodies. */
-const MAX_TRANSLATE_INPUT_CHARS = 8000;
-
 export default function TranslatePage() {
   const auth = useAuth();
   const [inputText, setInputText] = useState('');
@@ -35,7 +32,6 @@ export default function TranslatePage() {
   const [result, setResult] = useState<{ original_text: string; source_lang: string; translations: Record<string, string> } | null>(null);
   const [loading, setLoading] = useState(false);
   const [apiDown, setApiDown] = useState(false);
-  const [translateError, setTranslateError] = useState<string | null>(null);
   const [history, setHistory] = useState<SavedTranslation[]>([]);
 
   useEffect(() => {
@@ -71,23 +67,14 @@ export default function TranslatePage() {
   const selectAll = () => setSelectedLangs(new Set(LANG_OPTIONS.map((l) => l.code)));
   const clearAll = () => setSelectedLangs(new Set());
 
-  const trimmed = inputText.trim();
-  const hasTargets = selectedLangs.size > 0;
-  const canSubmit = trimmed.length > 0 && hasTargets && !loading;
-
   const handleTranslate = async () => {
-    const text = inputText.trim();
-    if (!text || selectedLangs.size === 0) return;
     setLoading(true);
     setResult(null);
-    setTranslateError(null);
     try {
-      const targetList = selectedLangs.size > 0 ? Array.from(selectedLangs) : LANG_OPTIONS.map((l) => l.code);
-      const data = await translateText(text, { target_languages: targetList });
-      if (!data) {
-        setTranslateError('Translation did not return a result. Check the API or try again.');
-        return;
-      }
+      const targetList =
+        selectedLangs.size > 0 ? Array.from(selectedLangs) : LANG_OPTIONS.map((l) => l.code);
+      const data = await translateText(inputText, { target_languages: targetList });
+      if (!data) return;
       setResult(data);
       if (data && typeof localStorage !== 'undefined') {
         const entry: SavedTranslation = {
@@ -123,7 +110,7 @@ export default function TranslatePage() {
       <div>
         <h1 className="text-3xl font-orbitron font-bold flex items-center gap-2">
           <Languages className="w-8 h-8 text-primary" />
-          Multi-language translation
+          Text to Multiple Languages API
         </h1>
       </div>
 
@@ -135,6 +122,7 @@ export default function TranslatePage() {
       )}
 
       <GlassCard className="space-y-4">
+        <h2 className="text-lg font-semibold">Try it yourself</h2>
         <div>
           <label
             htmlFor="translate-text"
@@ -144,23 +132,11 @@ export default function TranslatePage() {
           </label>
           <textarea
             id="translate-text"
-            aria-describedby="translate-char-count"
-            maxLength={MAX_TRANSLATE_INPUT_CHARS}
             className="w-full min-h-[120px] rounded-lg border border-border bg-input px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             placeholder="Hello world"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
           />
-          <div className="flex justify-end mt-2 text-xs text-muted-foreground">
-            <span
-              id="translate-char-count"
-              className={
-                inputText.length >= MAX_TRANSLATE_INPUT_CHARS * 0.9 ? 'text-amber-500 font-medium' : ''
-              }
-            >
-              {inputText.length.toLocaleString()} / {MAX_TRANSLATE_INPUT_CHARS.toLocaleString()}
-            </span>
-          </div>
         </div>
         <div>
           <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -186,22 +162,8 @@ export default function TranslatePage() {
               </label>
             ))}
           </div>
-          {!hasTargets && (
-            <output className="block text-sm text-amber-600 dark:text-amber-500 mt-2" aria-live="polite">
-              Select at least one target language to translate.
-            </output>
-          )}
         </div>
-        {translateError && (
-          <div
-            className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-destructive text-sm"
-            role="alert"
-          >
-            <AlertCircle className="w-5 h-5 shrink-0" />
-            <span>{translateError}</span>
-          </div>
-        )}
-        <GlowButton onClick={handleTranslate} disabled={!canSubmit}>
+        <GlowButton onClick={handleTranslate} disabled={loading}>
           {loading ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : 'Translate'}
         </GlowButton>
       </GlassCard>

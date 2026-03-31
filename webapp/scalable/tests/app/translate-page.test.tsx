@@ -26,7 +26,8 @@ describe('TranslatePage', () => {
   it('renders and health check clears apiDown', async () => {
     vi.useFakeTimers();
     render(<TranslatePage />);
-    expect(screen.getByText(/Multi-language translation/i)).toBeInTheDocument();
+    expect(screen.getByText(/Text to Multiple Languages API/i)).toBeInTheDocument();
+    expect(screen.getByText(/Try it yourself/i)).toBeInTheDocument();
     await act(async () => {
       await vi.advanceTimersByTimeAsync(200);
     });
