@@ -5,7 +5,7 @@ frontend:
     preBuild:
       commands:
         - node scripts/replace-api-url.js
-        - grep -q try-compare-grid index.html || (echo "ERROR: index.html missing expected UI"; exit 1)
+        - grep -q try-compare-stack index.html || (echo "ERROR: index.html missing expected UI"; exit 1)
     build:
       commands: []
   artifacts:

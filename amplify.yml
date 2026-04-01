@@ -9,7 +9,7 @@ frontend:
     preBuild:
       commands:
         - node api/scripts/replace-api-url.js
-        - grep -q try-compare-grid api/index.html || (echo "ERROR: api/index.html missing expected UI"; exit 1)
+        - grep -q try-compare-stack api/index.html || (echo "ERROR: api/index.html missing expected UI"; exit 1)
     build:
       commands: []
   artifacts:

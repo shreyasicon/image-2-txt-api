@@ -157,24 +157,26 @@
             margin-bottom: 1.25rem;
         }
 
-        .try-compare-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.25rem;
-            align-items: stretch;
+        /* Same content width as API Reference section (full .wrap, 1100px max) */
+        .try-compare-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
             margin-top: 1.5rem;
-        }
-
-        @media (max-width: 900px) {
-            .try-compare-grid {
-                grid-template-columns: 1fr;
-            }
+            width: 100%;
+            max-width: none;
         }
 
         .try-column {
             display: flex;
             flex-direction: column;
             min-width: 0;
+        }
+
+        .try-column-after-validated {
+            padding-top: 2rem;
+            margin-top: 0.5rem;
+            border-top: 1px solid var(--border);
         }
 
         .try-mode-badge {
@@ -681,14 +683,13 @@
         <section class="try-section" id="try">
             <div class="section-title">
                 <h2>Try it <span class="green">yourself</span></h2>
-                <p style="color:var(--text-muted);font-size:0.9375rem;margin-top:0.5rem;max-width:52rem;margin-left:auto;margin-right:auto;">Two modes side by side: <strong style="color:var(--text);">with</strong> post-validation (blocked words, sensitivity, quality &amp; script) and <strong style="color:var(--text);">without</strong> (<code>skipPostprocess: true</code>) — same Textract/OCR pipeline and S3, so you can show exactly what the validation layer adds or blocks.</p>
             </div>
 
-            <div class="try-compare-grid">
+            <div class="try-compare-stack">
                 <div class="try-column">
                     <span class="try-mode-badge validation">With post-validation</span>
                     <p class="try-mode-desc">Full pipeline including Node <code>ocr-postprocess</code>: blocked terms, sensitivity patterns, upload checks, quality score, script hints.</p>
-                    <div class="try-card" style="margin-bottom:0;flex:1;display:flex;flex-direction:column;">
+                    <div class="try-card" style="margin-bottom:0;display:flex;flex-direction:column;">
                         <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
                             <div class="label">Click or drag an image here</div>
                             <div class="filename" id="filename"></div>
@@ -698,29 +699,9 @@
                         <p class="try-tech-note">Request body does <strong>not</strong> set <code>skipPostprocess</code> (default = validation on).</p>
                     </div>
                 </div>
-                <div class="try-column">
-                    <span class="try-mode-badge raw">Without validation</span>
-                    <p class="try-mode-desc">Raw OCR text and confidence only — no blocked-word or sensitivity checks, no quality/script enrichment. Same storage to S3 and <code>jobId</code>.</p>
-                    <div class="try-card" style="margin-bottom:0;flex:1;display:flex;flex-direction:column;">
-                        <div class="upload-zone" id="uploadZoneNoValidation" onclick="document.getElementById('fileInputNoValidation').click()">
-                            <div class="label">Click or drag an image here</div>
-                            <div class="filename" id="filenameNoValidation"></div>
-                            <input type="file" id="fileInputNoValidation" accept="image/*">
-                        </div>
-                        <button class="btn-extract" id="submitBtnNoValidation" onclick="sendImageNoValidation()" disabled>Extract Text</button>
-                        <div class="label-sm" style="margin-top:0.75rem;margin-bottom:0.35rem;">Extracted text (preview)</div>
-                        <div class="extract-preview-raw" id="textPreviewNoValidation" aria-live="polite"></div>
-                        <div class="result-section" id="resultSectionNoValidation" style="margin-top:1rem;">
-                            <div class="label-sm" style="margin-bottom:0.35rem;">Response (JSON)</div>
-                            <div class="json-block" id="outputNoValidation">{"result": "pending", "data": null}</div>
-                        </div>
-                        <p class="try-tech-note">Sends <code>skipPostprocess: true</code> on <code>POST /ocr/base64</code> (or form field for multipart).</p>
-                    </div>
-                </div>
-            </div>
 
             <div class="try-card" id="validationResultsWrap" style="display:none;margin-top:1.5rem;">
-                <div class="label-sm" style="margin-bottom:0.75rem;color:var(--text-muted);">With validation — full response and Job ID tools</div>
+                <div class="label-sm" style="margin-bottom:0.75rem;color:var(--text-muted);">With post-validation — full response and Job ID tools</div>
                 <div class="result-section" id="resultSection">
                     <div class="result-meta">
                         <span class="confidence-badge" id="confidenceBadge"></span>
@@ -758,6 +739,27 @@
                             <textarea id="updateTextInput" rows="3" style="width:100%; margin-top:0.25rem; padding:0.5rem; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:0.875rem;" placeholder="Enter new text to save for this job"></textarea>
                         </div>
                         <div class="fetch-result" id="fetchResultArea" style="display:none; margin-top:0.75rem;"></div>
+                    </div>
+                </div>
+            </div>
+
+                <div class="try-column try-column-after-validated">
+                    <span class="try-mode-badge raw">Without validation</span>
+                    <p class="try-mode-desc">Raw OCR text and confidence only — no blocked-word or sensitivity checks, no quality/script enrichment. Same storage to S3 and <code>jobId</code>.</p>
+                    <div class="try-card" style="margin-bottom:0;display:flex;flex-direction:column;">
+                        <div class="upload-zone" id="uploadZoneNoValidation" onclick="document.getElementById('fileInputNoValidation').click()">
+                            <div class="label">Click or drag an image here</div>
+                            <div class="filename" id="filenameNoValidation"></div>
+                            <input type="file" id="fileInputNoValidation" accept="image/*">
+                        </div>
+                        <button class="btn-extract" id="submitBtnNoValidation" onclick="sendImageNoValidation()" disabled>Extract Text</button>
+                        <div class="label-sm" style="margin-top:0.75rem;margin-bottom:0.35rem;">Extracted text (preview)</div>
+                        <div class="extract-preview-raw" id="textPreviewNoValidation" aria-live="polite"></div>
+                        <p class="try-tech-note">Sends <code>skipPostprocess: true</code> on <code>POST /ocr/base64</code> (or form field for multipart).</p>
+                        <div class="result-section" id="resultSectionNoValidation" style="margin-top:1rem;">
+                            <div class="label-sm" style="margin-bottom:0.35rem;">Response (JSON)</div>
+                            <div class="json-block" id="outputNoValidation">{"result": "pending", "data": null}</div>
+                        </div>
                     </div>
                 </div>
             </div>
