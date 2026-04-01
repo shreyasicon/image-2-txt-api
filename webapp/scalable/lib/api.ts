@@ -20,7 +20,38 @@ export function getOcrApiOcrUrl(): string {
   return getOcrApiBaseUrl() + '/ocr';
 }
 
-// Text to Multiple Languages API (Translation) – https://wasiullah26.github.io/text-to-languages-api-page/
+/**
+ * Turns OCR API error JSON (e.g. 400 with message + reason + categories) into one user-visible string.
+ */
+export function formatOcrApiErrorPayload(json: Record<string, unknown>): string {
+  const message =
+    (typeof json.message === 'string' && json.message.trim()) ||
+    (typeof json.error === 'string' && json.error.trim()) ||
+    '';
+  const reason = typeof json.reason === 'string' ? json.reason.trim() : '';
+  const categories = Array.isArray(json.categories)
+    ? json.categories.map((c) => String(c)).filter(Boolean)
+    : [];
+  const fromCategories = categories.length ? categories.join(', ') : '';
+  const detail = reason || fromCategories;
+  if (message && detail) {
+    if (detail === message || message.includes(detail)) return message;
+    return `${message}\n\n${detail}`;
+  }
+  if (message) return message;
+  if (detail) return detail;
+  return 'Request failed';
+}
+
+/** True when the OCR client message indicates transport/CORS failure (not API policy text). */
+export function isOcrNetworkErrorMessage(message: string): boolean {
+  return /cannot reach the ocr api|failed to fetch|network error|load failed|connection/i.test(
+    String(message || '')
+  );
+}
+
+// Text to Multiple Languages API — base URL only; client POSTs to ${base}/translate
+// e.g. https://t3jb8c44xi.execute-api.us-east-1.amazonaws.com/translate
 const DEFAULT_TRANSLATE_API_BASE = 'https://t3jb8c44xi.execute-api.us-east-1.amazonaws.com';
 const TRANSLATE_API_BASE =
   (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_TRANSLATE_API_BASE) || DEFAULT_TRANSLATE_API_BASE;
@@ -254,11 +285,13 @@ export async function extractTextFromImageAsync(
     return { jobId: json.jobId, status: json.status ?? 'processing', success: true as const };
   }
   if (!response.ok) {
+    const errJson = (json && typeof json === 'object' ? json : {}) as Record<string, unknown>;
     return {
       text: '',
       confidence: 0,
       success: false,
-      error: (json?.message || json?.error || response.statusText) as string || 'Request failed',
+      error: formatOcrApiErrorPayload(errJson),
+      raw: errJson,
     };
   }
   const data = (json?.data && typeof json.data === 'object' ? json.data : json) as Record<string, unknown>;
@@ -312,12 +345,14 @@ export async function extractTextFromImage(
     const data = (json?.data && typeof json.data === 'object' ? json.data : json) as Record<string, unknown>;
 
     if (!response.ok) {
-      const msg = (json?.message || json?.error || response.statusText) as string || 'Request failed';
+      const errJson = (json && typeof json === 'object' ? json : {}) as Record<string, unknown>;
+      const errText = formatOcrApiErrorPayload(errJson) || (response.statusText || 'Request failed');
       return {
         text: '',
         confidence: 0,
         success: false,
-        error: msg,
+        error: errText,
+        raw: errJson,
       };
     }
 

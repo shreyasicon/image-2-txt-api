@@ -12,6 +12,8 @@ frontend:
         - npm ci
     build:
       commands:
+        # Pin translate API for static export (POST ${base}/translate). Overrides stale Amplify console env if any.
+        - export NEXT_PUBLIC_TRANSLATE_API_BASE="https://t3jb8c44xi.execute-api.us-east-1.amazonaws.com"
         - npm run build
   artifacts:
     baseDirectory: out
