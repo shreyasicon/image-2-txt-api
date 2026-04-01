@@ -219,7 +219,7 @@ describe('translate API', () => {
     expect(r?.translations.es).toBe('hola');
   });
 
-  it('translateText sends Authorization when getToken returns a token', async () => {
+  it('translateText sends Authorization when getAccessToken returns a token', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -228,7 +228,7 @@ describe('translate API', () => {
         translations: {},
       }),
     } as Response);
-    await translateText('x', { getToken: async () => 'test-jwt' });
+    await translateText('x', { getAccessToken: async () => 'test-jwt' });
     expect(fetchSpy).toHaveBeenCalledWith(
       expect.stringMatching(/\/translate$/),
       expect.objectContaining({
@@ -238,6 +238,32 @@ describe('translate API', () => {
         }),
       })
     );
+  });
+
+  it('translateText retries id token after access returns 401', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: async () => ({ detail: 'Authentication required' }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          original_text: 'a',
+          source_lang: 'en',
+          translations: { es: 'hola' },
+        }),
+      } as Response);
+    const r = await translateText('a', {
+      getAccessToken: async () => 'acc',
+      getIdToken: async () => 'idtok',
+    });
+    expect(r?.translations.es).toBe('hola');
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    const second = fetchSpy.mock.calls[1]?.[1] as { headers: Record<string, string> };
+    expect(second.headers.Authorization).toBe('Bearer idtok');
   });
 
   it('getTranslateLanguages returns data when ok', async () => {

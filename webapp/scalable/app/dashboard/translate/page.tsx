@@ -73,20 +73,22 @@ export default function TranslatePage() {
     setLoading(true);
     setResult(null);
     setTranslateError(null);
-    if (!auth?.user) {
-      setTranslateError('Sign in to translate. The Text to Multiple Languages API requires a logged-in session.');
-      setLoading(false);
-      return;
-    }
     try {
       const targetList =
         selectedLangs.size > 0 ? Array.from(selectedLangs) : LANG_OPTIONS.map((l) => l.code);
       const data = await translateText(inputText, {
         target_languages: targetList,
-        getToken: auth.getAccessToken,
+        ...(auth && {
+          getAccessToken: auth.getAccessToken,
+          getIdToken: auth.getIdToken,
+        }),
       });
       if (!data) {
-        setTranslateError('Translation failed. Check that you are signed in and try again.');
+        setTranslateError(
+          auth?.user
+            ? 'Translation failed. The translate API must accept JWTs from this app’s Cognito user pool (same login as the vault). If your pool is already wired on the API, try again.'
+            : 'Translation failed. Sign in with your vault account so we can send your Cognito token, or enable anonymous POST /translate on the API.'
+        );
         return;
       }
       setResult(data);
@@ -137,11 +139,11 @@ export default function TranslatePage() {
 
       {!auth?.user && !auth?.loading && (
         <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-          <span className="text-foreground font-medium">Sign in required.</span> The translate API accepts requests only with a valid session (
+          <span className="text-foreground font-medium">Tip:</span> You can try Translate without signing in if the API allows it.{' '}
           <Link href="/dashboard/auth" className="text-primary underline underline-offset-2">
             Sign in
-          </Link>
-          ).
+          </Link>{' '}
+          to use the same Cognito session as the rest of the vault (recommended if the API requires auth).
         </div>
       )}
 
@@ -194,7 +196,7 @@ export default function TranslatePage() {
             ))}
           </div>
         </div>
-        <GlowButton onClick={handleTranslate} disabled={loading || !auth?.user}>
+        <GlowButton onClick={handleTranslate} disabled={loading}>
           {loading ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : 'Translate'}
         </GlowButton>
       </GlassCard>

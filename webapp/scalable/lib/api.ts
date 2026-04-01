@@ -468,37 +468,60 @@ function formatTranslateApiError(data: Record<string, unknown>): string {
   return 'Request failed';
 }
 
+/**
+ * POST /translate — tries, in order: Cognito access token, Cognito ID token (API Gateway / backends differ),
+ * then an unauthenticated request (works only if the API allows anonymous translate).
+ */
 export async function translateText(
   text: string,
   options?: {
     source_lang?: string;
     target_languages?: string[];
-    /** Required by the hosted API: POST /translate expects `Authorization: Bearer <Cognito JWT>`. */
-    getToken?: () => Promise<string | null>;
+    /** Same Cognito session as the vault webapp (aws-amplify). */
+    getAccessToken?: () => Promise<string | null>;
+    getIdToken?: () => Promise<string | null>;
   }
 ): Promise<TranslateResponse | null> {
+  const base = trimTrailingSlashes(TRANSLATE_API_BASE || DEFAULT_TRANSLATE_API_BASE);
+  const body = JSON.stringify({
+    text,
+    ...(options?.source_lang && { source_lang: options.source_lang }),
+    ...(options?.target_languages?.length && { target_languages: options.target_languages }),
+  });
+
+  type HeaderSet = Record<string, string>;
+  const attempts: HeaderSet[] = [];
+  const pushUnique = (h: HeaderSet) => {
+    const sig = JSON.stringify(h);
+    if (!attempts.some((x) => JSON.stringify(x) === sig)) attempts.push(h);
+  };
+
   try {
-    const base = trimTrailingSlashes(TRANSLATE_API_BASE || DEFAULT_TRANSLATE_API_BASE);
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (options?.getToken) {
-      const token = await options.getToken();
-      if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (options?.getAccessToken) {
+      const t = await options.getAccessToken();
+      if (t) pushUnique({ 'Content-Type': 'application/json', Authorization: `Bearer ${t}` });
     }
-    const res = await fetch(`${base}/translate`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        text,
-        ...(options?.source_lang && { source_lang: options.source_lang }),
-        ...(options?.target_languages?.length && { target_languages: options.target_languages }),
-      }),
-    });
-    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-    if (!res.ok) {
-      console.error('Translate API error:', formatTranslateApiError(data));
-      return null;
+    if (options?.getIdToken) {
+      const t = await options.getIdToken();
+      if (t) pushUnique({ 'Content-Type': 'application/json', Authorization: `Bearer ${t}` });
     }
-    return data as unknown as TranslateResponse;
+    pushUnique({ 'Content-Type': 'application/json' });
+
+    let lastDetail = '';
+    for (const headers of attempts) {
+      const res = await fetch(`${base}/translate`, { method: 'POST', headers, body });
+      const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+      if (res.ok) {
+        return data as unknown as TranslateResponse;
+      }
+      lastDetail = formatTranslateApiError(data);
+      if (res.status !== 401 && res.status !== 403) {
+        console.error('Translate API error:', lastDetail);
+        return null;
+      }
+    }
+    console.error('Translate API error (after auth attempts):', lastDetail);
+    return null;
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
     console.error('Translate API request failed:', msg);
