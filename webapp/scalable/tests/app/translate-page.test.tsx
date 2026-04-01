@@ -8,6 +8,21 @@ const translateApi = vi.hoisted(() => ({
   translateText: vi.fn().mockResolvedValue(null),
 }));
 
+vi.mock('@/components/auth-provider', () => ({
+  useAuth: () => ({
+    user: { userId: 'u1', username: 'test@example.com', email: 'test@example.com' },
+    loading: false,
+    isConfigured: true,
+    getIdToken: vi.fn().mockResolvedValue('mock-id'),
+    getAccessToken: vi.fn().mockResolvedValue('mock-access'),
+    signIn: vi.fn(),
+    signOut: vi.fn(),
+    signUp: vi.fn(),
+    updateUsername: vi.fn(),
+    refreshUser: vi.fn(),
+  }),
+}));
+
 vi.mock('@/lib/api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/api')>();
   return {

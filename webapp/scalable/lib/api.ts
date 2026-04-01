@@ -457,27 +457,48 @@ export interface TranslateResponse {
   translations: Record<string, string>;
 }
 
+function formatTranslateApiError(data: Record<string, unknown>): string {
+  const d = data?.detail;
+  if (typeof d === 'string') return d;
+  if (Array.isArray(d) && d[0] && typeof (d[0] as { msg?: string }).msg === 'string') {
+    return (d[0] as { msg: string }).msg;
+  }
+  const msg = data?.message ?? data?.error;
+  if (typeof msg === 'string') return msg;
+  return 'Request failed';
+}
+
 export async function translateText(
   text: string,
-  options?: { source_lang?: string; target_languages?: string[] }
+  options?: {
+    source_lang?: string;
+    target_languages?: string[];
+    /** Required by the hosted API: POST /translate expects `Authorization: Bearer <Cognito JWT>`. */
+    getToken?: () => Promise<string | null>;
+  }
 ): Promise<TranslateResponse | null> {
   try {
     const base = trimTrailingSlashes(TRANSLATE_API_BASE || DEFAULT_TRANSLATE_API_BASE);
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (options?.getToken) {
+      const token = await options.getToken();
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+    }
     const res = await fetch(`${base}/translate`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
         text,
         ...(options?.source_lang && { source_lang: options.source_lang }),
         ...(options?.target_languages?.length && { target_languages: options.target_languages }),
       }),
     });
-    const data = await res.json().catch(() => ({}));
+    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
     if (!res.ok) {
-      console.error('Translate API error:', data?.message || data?.error || res.statusText);
+      console.error('Translate API error:', formatTranslateApiError(data));
       return null;
     }
-    return data as TranslateResponse;
+    return data as unknown as TranslateResponse;
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
     console.error('Translate API request failed:', msg);

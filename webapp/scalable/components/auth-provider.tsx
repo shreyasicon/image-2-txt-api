@@ -18,6 +18,8 @@ interface AuthContextValue {
   loading: boolean;
   isConfigured: boolean;
   getIdToken: () => Promise<string | null>;
+  /** Cognito access token (often required by HTTP APIs / API Gateway). */
+  getAccessToken: () => Promise<string | null>;
   signIn: (username: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   signUp: (email: string, password: string, name?: string) => Promise<void>;
@@ -104,6 +106,18 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     }
   }, []);
 
+  const getAccessToken = useCallback(async (): Promise<string | null> => {
+    if (!isCognitoConfigured) return null;
+    try {
+      const session = await fetchAuthSession();
+      const token = session.tokens?.accessToken?.toString();
+      return token || null;
+    } catch (error) {
+      console.error('Failed to fetch auth session for access token:', error);
+      return null;
+    }
+  }, []);
+
   const signIn = useCallback(async (username: string, password: string) => {
     await amplifySignIn({ username, password });
     await refreshUser();
@@ -133,13 +147,14 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
       loading,
       isConfigured: isCognitoConfigured,
       getIdToken,
+      getAccessToken,
       signIn,
       signOut,
       signUp: signUpUser,
       updateUsername,
       refreshUser,
     }),
-    [user, loading, getIdToken, signIn, signOut, signUpUser, updateUsername, refreshUser],
+    [user, loading, getIdToken, getAccessToken, signIn, signOut, signUpUser, updateUsername, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

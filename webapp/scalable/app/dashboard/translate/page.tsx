@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { GlassCard } from '@/components/glass-card';
 import { GlowButton } from '@/components/glow-button';
 import { translateText, translateHealth } from '@/lib/api';
@@ -30,6 +31,7 @@ export default function TranslatePage() {
   const [inputText, setInputText] = useState('');
   const [selectedLangs, setSelectedLangs] = useState<Set<string>>(new Set(LANG_OPTIONS.map((l) => l.code)));
   const [result, setResult] = useState<{ original_text: string; source_lang: string; translations: Record<string, string> } | null>(null);
+  const [translateError, setTranslateError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [apiDown, setApiDown] = useState(false);
   const [history, setHistory] = useState<SavedTranslation[]>([]);
@@ -70,11 +72,23 @@ export default function TranslatePage() {
   const handleTranslate = async () => {
     setLoading(true);
     setResult(null);
+    setTranslateError(null);
+    if (!auth?.user) {
+      setTranslateError('Sign in to translate. The Text to Multiple Languages API requires a logged-in session.');
+      setLoading(false);
+      return;
+    }
     try {
       const targetList =
         selectedLangs.size > 0 ? Array.from(selectedLangs) : LANG_OPTIONS.map((l) => l.code);
-      const data = await translateText(inputText, { target_languages: targetList });
-      if (!data) return;
+      const data = await translateText(inputText, {
+        target_languages: targetList,
+        getToken: auth.getAccessToken,
+      });
+      if (!data) {
+        setTranslateError('Translation failed. Check that you are signed in and try again.');
+        return;
+      }
       setResult(data);
       if (data && typeof localStorage !== 'undefined') {
         const entry: SavedTranslation = {
@@ -121,6 +135,23 @@ export default function TranslatePage() {
         </div>
       )}
 
+      {!auth?.user && !auth?.loading && (
+        <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+          <span className="text-foreground font-medium">Sign in required.</span> The translate API accepts requests only with a valid session (
+          <Link href="/dashboard/auth" className="text-primary underline underline-offset-2">
+            Sign in
+          </Link>
+          ).
+        </div>
+      )}
+
+      {translateError && (
+        <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-destructive text-sm">
+          <AlertCircle className="w-5 h-5 shrink-0" />
+          <span>{translateError}</span>
+        </div>
+      )}
+
       <GlassCard className="space-y-4">
         <h2 className="text-lg font-semibold">Try it yourself</h2>
         <div>
@@ -163,7 +194,7 @@ export default function TranslatePage() {
             ))}
           </div>
         </div>
-        <GlowButton onClick={handleTranslate} disabled={loading}>
+        <GlowButton onClick={handleTranslate} disabled={loading || !auth?.user}>
           {loading ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : 'Translate'}
         </GlowButton>
       </GlassCard>

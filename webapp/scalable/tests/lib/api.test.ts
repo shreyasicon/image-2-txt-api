@@ -144,6 +144,24 @@ describe('extractTextFromImage', () => {
     expect(r.success).toBe(false);
     expect(r.error).toMatch(/Cannot reach the OCR API/i);
   });
+
+  it('includes API reason on 400 blocked/sensitivity responses', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: false,
+      status: 400,
+      statusText: 'Bad Request',
+      json: async () => ({
+        message: 'Extracted text cannot be displayed.',
+        reason: 'Government ID, Contact information',
+        categories: ['Government ID', 'Contact information'],
+      }),
+    } as Response);
+    const r = await extractTextFromImage(pngFile());
+    expect(r.success).toBe(false);
+    expect(r.error).toContain('Extracted text cannot be displayed');
+    expect(r.error).toContain('Government ID');
+    expect(r.error).toContain('Contact information');
+  });
 });
 
 describe('extractTextFromImageAsync', () => {
@@ -199,6 +217,27 @@ describe('translate API', () => {
     } as Response);
     const r = await translateText(' hi ', { source_lang: 'en', target_languages: ['es'] });
     expect(r?.translations.es).toBe('hola');
+  });
+
+  it('translateText sends Authorization when getToken returns a token', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        original_text: 'a',
+        source_lang: 'en',
+        translations: {},
+      }),
+    } as Response);
+    await translateText('x', { getToken: async () => 'test-jwt' });
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/\/translate$/),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: 'Bearer test-jwt',
+          'Content-Type': 'application/json',
+        }),
+      })
+    );
   });
 
   it('getTranslateLanguages returns data when ok', async () => {
