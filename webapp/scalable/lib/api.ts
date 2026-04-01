@@ -51,8 +51,9 @@ export function isOcrNetworkErrorMessage(message: string): boolean {
 }
 
 // Text to Multiple Languages API — host only (no path). POST ${base}/translate, GET ${base}/health, ${base}/languages
-// Full translate URL: https://t3jb8c44xi.execute-api.us-east-1.amazonaws.com/translate
-const DEFAULT_TRANSLATE_API_BASE = 'https://t3jb8c44xi.execute-api.us-east-1.amazonaws.com';
+/** Public base URL (API reference / UI). Example: …/translate */
+export const TRANSLATE_API_PUBLIC_BASE_URL = 'https://t3jb8c44xi.execute-api.us-east-1.amazonaws.com';
+const DEFAULT_TRANSLATE_API_BASE = TRANSLATE_API_PUBLIC_BASE_URL;
 const TRANSLATE_API_BASE =
   (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_TRANSLATE_API_BASE) || DEFAULT_TRANSLATE_API_BASE;
 

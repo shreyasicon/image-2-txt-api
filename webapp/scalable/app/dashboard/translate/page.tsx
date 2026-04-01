@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { GlassCard } from '@/components/glass-card';
 import { GlowButton } from '@/components/glow-button';
-import { translateText, translateHealth } from '@/lib/api';
-import { Languages, AlertCircle, Copy, Check, Clock, Loader2 } from 'lucide-react';
+import { translateText, translateHealth, TRANSLATE_API_PUBLIC_BASE_URL } from '@/lib/api';
+import { Languages, AlertCircle, Copy, Check, Clock, Loader2, BookOpen } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
 
 const TRANSLATION_HISTORY_KEY = 'translationHistory';
@@ -233,6 +233,42 @@ export default function TranslatePage() {
           </div>
         </GlassCard>
       )}
+
+      <GlassCard className="space-y-4">
+        <h2 className="text-lg font-semibold flex items-center gap-2">
+          <BookOpen className="w-5 h-5 text-primary" />
+          API Reference
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          <strong className="text-foreground">Base URL:</strong>{' '}
+          <code className="rounded bg-muted/80 px-1.5 py-0.5 text-xs break-all">{TRANSLATE_API_PUBLIC_BASE_URL}</code>
+          . All responses are JSON.
+        </p>
+        <div className="space-y-2 text-sm border-t border-border/50 pt-4">
+          <p className="font-medium text-foreground">POST /translate</p>
+          <p className="text-muted-foreground">
+            Send JSON body: <code className="text-xs bg-muted/80 px-1 rounded">{'{ "text": "Your text" }'}</code>.
+            Optional: <code className="text-xs">source_lang</code>,{' '}
+            <code className="text-xs">target_languages</code> (array of language codes).
+          </p>
+          <p className="text-muted-foreground">
+            <strong className="text-foreground">Response:</strong>
+          </p>
+          <pre className="rounded-lg border border-border bg-muted/30 p-4 text-xs overflow-x-auto text-foreground font-mono leading-relaxed">
+            {`{
+  "original_text": "...",
+  "source_lang": "en",
+  "translations": {
+    "es": "...",
+    "fr": "...",
+    "de": "...",
+    "it": "...",
+    "pt": "..."
+  }
+}`}
+          </pre>
+        </div>
+      </GlassCard>
 
       {/* Previous translations – only for logged-in users */}
       {auth?.user && history.length > 0 && (
