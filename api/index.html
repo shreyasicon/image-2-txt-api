@@ -154,6 +154,89 @@
             margin-top: 2.25rem;
             margin-bottom: 1.25rem;
         }
+
+        .try-compare-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+            align-items: stretch;
+            margin-top: 1.5rem;
+        }
+
+        @media (max-width: 900px) {
+            .try-compare-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .try-column {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .try-mode-badge {
+            display: inline-block;
+            font-size: 0.6875rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            padding: 0.35rem 0.65rem;
+            border-radius: 6px;
+            margin-bottom: 0.65rem;
+            width: fit-content;
+        }
+
+        .try-mode-badge.validation {
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--accent);
+            border: 1px solid rgba(34, 197, 94, 0.45);
+        }
+
+        .try-mode-badge.raw {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.45);
+        }
+
+        .try-mode-desc {
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            line-height: 1.45;
+            margin-bottom: 1rem;
+        }
+
+        .try-tech-note {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .try-tech-note code {
+            font-size: 0.7rem;
+            color: #a1a1aa;
+        }
+
+        .extract-preview-raw {
+            margin-top: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: var(--surface-2);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            font-size: 0.875rem;
+            line-height: 1.5;
+            max-height: 140px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            display: none;
+        }
+
+        .extract-preview-raw.visible {
+            display: block;
+        }
         
         .try-card {
             background: var(--surface);
@@ -583,7 +666,7 @@
                 <div class="step">
                     <div class="step-num">3</div>
                     <h3>Validate</h3>
-                    <p>Each result includes a confidence score so you can assess reliability.</p>
+                    <p>Optional post-validation (blocked terms, sensitivity, quality/script). Compare with raw OCR in the demo.</p>
                 </div>
                 <div class="step">
                     <div class="step-num">4</div>
@@ -596,32 +679,41 @@
         <section class="try-section" id="try">
             <div class="section-title">
                 <h2>Try it <span class="green">yourself</span></h2>
-                <p style="color:var(--text-muted);font-size:0.9375rem;margin-top:0.5rem;">Upload and extract with full validation, quality metrics, and script detection (ocr_postprocess).</p>
-            </div>
-            <div class="try-card">
-                <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
-                    <div class="label">Click or drag an image here</div>
-                    <div class="filename" id="filename"></div>
-                    <input type="file" id="fileInput" accept="image/*">
-                </div>
-                <button class="btn-extract" id="submitBtn" onclick="sendImage()" disabled>Extract Text</button>
+                <p style="color:var(--text-muted);font-size:0.9375rem;margin-top:0.5rem;max-width:52rem;margin-left:auto;margin-right:auto;">Two modes side by side: <strong style="color:var(--text);">with</strong> post-validation (blocked words, sensitivity, quality &amp; script) and <strong style="color:var(--text);">without</strong> (<code>skipPostprocess: true</code>) — same Textract/OCR pipeline and S3, so you can show exactly what the validation layer adds or blocks.</p>
             </div>
 
-            <div class="section-title try-subhead">
-                <h2>Or Try <span class="green">without Validation</span></h2>
-                <p style="color:var(--text-muted);font-size:0.9375rem;margin-top:0.5rem;">Upload and extract text only — no Python validation layer (ocr_postprocess). Same OCR and S3 storage.</p>
-                <p style="color:var(--text-muted);font-size:0.8125rem;margin-top:0.35rem;">This path sends <code>skipPostprocess: true</code> (OCR + S3 only; no blocked-word, sensitivity, or quality/script fields).</p>
-            </div>
-            <div class="try-card">
-                <div class="upload-zone" id="uploadZoneNoValidation" onclick="document.getElementById('fileInputNoValidation').click()">
-                    <div class="label">Click or drag an image here</div>
-                    <div class="filename" id="filenameNoValidation"></div>
-                    <input type="file" id="fileInputNoValidation" accept="image/*">
+            <div class="try-compare-grid">
+                <div class="try-column">
+                    <span class="try-mode-badge validation">With post-validation</span>
+                    <p class="try-mode-desc">Full pipeline including Node <code>ocr-postprocess</code>: blocked terms, sensitivity patterns, upload checks, quality score, script hints.</p>
+                    <div class="try-card" style="margin-bottom:0;flex:1;display:flex;flex-direction:column;">
+                        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                            <div class="label">Click or drag an image here</div>
+                            <div class="filename" id="filename"></div>
+                            <input type="file" id="fileInput" accept="image/*">
+                        </div>
+                        <button class="btn-extract" id="submitBtn" onclick="sendImage()" disabled>Extract Text</button>
+                        <p class="try-tech-note">Request body does <strong>not</strong> set <code>skipPostprocess</code> (default = validation on).</p>
+                    </div>
                 </div>
-                <button class="btn-extract" id="submitBtnNoValidation" onclick="sendImageNoValidation()" disabled>Extract Text</button>
-                <div class="result-section" id="resultSectionNoValidation" style="margin-top:1rem;">
-                    <div class="label-sm" style="margin-bottom:0.35rem;">Response (JSON) — no postprocess</div>
-                    <div class="json-block" id="outputNoValidation">{"result": "pending", "data": null}</div>
+                <div class="try-column">
+                    <span class="try-mode-badge raw">Without validation</span>
+                    <p class="try-mode-desc">Raw OCR text and confidence only — no blocked-word or sensitivity checks, no quality/script enrichment. Same storage to S3 and <code>jobId</code>.</p>
+                    <div class="try-card" style="margin-bottom:0;flex:1;display:flex;flex-direction:column;">
+                        <div class="upload-zone" id="uploadZoneNoValidation" onclick="document.getElementById('fileInputNoValidation').click()">
+                            <div class="label">Click or drag an image here</div>
+                            <div class="filename" id="filenameNoValidation"></div>
+                            <input type="file" id="fileInputNoValidation" accept="image/*">
+                        </div>
+                        <button class="btn-extract" id="submitBtnNoValidation" onclick="sendImageNoValidation()" disabled>Extract Text</button>
+                        <div class="label-sm" style="margin-top:0.75rem;margin-bottom:0.35rem;">Extracted text (preview)</div>
+                        <div class="extract-preview-raw" id="textPreviewNoValidation" aria-live="polite"></div>
+                        <div class="result-section" id="resultSectionNoValidation" style="margin-top:1rem;">
+                            <div class="label-sm" style="margin-bottom:0.35rem;">Response (JSON)</div>
+                            <div class="json-block" id="outputNoValidation">{"result": "pending", "data": null}</div>
+                        </div>
+                        <p class="try-tech-note">Sends <code>skipPostprocess: true</code> on <code>POST /ocr/base64</code> (or form field for multipart).</p>
+                    </div>
                 </div>
             </div>
 
@@ -712,6 +804,11 @@
                 <p class="api-desc">Delete a stored OCR job by ID.</p>
                 <div class="label-sm">Response (200)</div>
                 <div class="json-block">{"success": true}</div>
+            </div>
+
+            <div class="api-route">
+                <h3><span class="method post">POST</span> <span class="api-path">/ocr/base64</span></h3>
+                <p class="api-desc">JSON body: <code>{ "image": "data:image/png;base64,...", "filename": "optional.png", "language": "eng" }</code>. Use <code>"skipPostprocess": true</code> to skip blocked-word / sensitivity checks and quality/script fields (same OCR engine and S3). Omit or set <code>false</code> for the full post-validation layer.</p>
             </div>
         </section>
 
@@ -1171,7 +1268,7 @@
                 if (!res.ok) {
                     var msg = data.message || data.error || 'Request failed';
                     if (msg === 'Extracted text cannot be displayed.') {
-                        var reason = data.reason || (data.categories && data.categories.length) ? data.categories.join(', ') : '';
+                        var reason = data.reason || ((data.categories && data.categories.length) ? data.categories.join(', ') : '');
                         var html = '<span class="error-msg">' + escapeHtml(msg) + '</span>';
                         if (reason) html += '<p class="block-reason" style="margin-top:0.75rem;font-size:0.875rem;color:var(--text-muted);"><strong>Reason:</strong> ' + escapeHtml(reason) + '</p>';
                         output.innerHTML = html;
@@ -1198,7 +1295,7 @@
                 resultFilename.textContent = data.filename ? 'File: ' + data.filename : '';
                 if (data.s3Key && resultS3Key) {
                     resultS3Key.style.display = 'inline';
-                    resultS3Key.textContent = '✓ Stored in S3: ' + data.s3Key;
+                    resultS3Key.textContent = 'Stored in S3: ' + data.s3Key;
                 } else if (resultS3Key) {
                     resultS3Key.style.display = 'none';
                 }
@@ -1262,6 +1359,11 @@
             if (!file) return alert('Select an image first');
 
             resultSectionNoValidation.classList.add('visible');
+            const textPreviewNoVal = document.getElementById('textPreviewNoValidation');
+            if (textPreviewNoVal) {
+                textPreviewNoVal.textContent = '';
+                textPreviewNoVal.classList.remove('visible');
+            }
             const base = getApiBase();
             const useBase64 = base && base !== window.location.origin;
             outputNoValidation.innerHTML = '<span class="loading"><span class="spinner"></span>Processing…</span>';
@@ -1300,17 +1402,27 @@
                     var errMsg = (data.message === 'Extracted text cannot be displayed.') ? data.message : (data.message || data.error || 'Request failed');
                     var html = '<span class="error-msg">' + escapeHtml(errMsg) + '</span>';
                     if (data.message === 'Extracted text cannot be displayed.' && (data.reason || (data.categories && data.categories.length))) {
-                        var reason = data.reason || data.categories.join(', ');
-                        html += '<p class="block-reason" style="margin-top:0.75rem;font-size:0.875rem;color:var(--text-muted);"><strong>Reason:</strong> ' + escapeHtml(reason) + '</p>';
+                        var reasonNv = data.reason || data.categories.join(', ');
+                        html += '<p class="block-reason" style="margin-top:0.75rem;font-size:0.875rem;color:var(--text-muted);"><strong>Reason:</strong> ' + escapeHtml(reasonNv) + '</p>';
                     }
                     outputNoValidation.innerHTML = html;
                     return;
                 }
                 var conf = data.confidence != null ? Number(data.confidence) : null;
+                var rawTextNv = (data.text || '').trim();
+                if (textPreviewNoVal) {
+                    if (rawTextNv) {
+                        textPreviewNoVal.textContent = rawTextNv;
+                        textPreviewNoVal.classList.add('visible');
+                    } else {
+                        textPreviewNoVal.classList.remove('visible');
+                    }
+                }
                 var apiStyle = {
                     result: 'success',
                     data: {
-                        text: (data.text || '').trim(),
+                        text: rawTextNv,
+                        confidence: conf,
                         filename: data.filename || null,
                         jobId: data.jobId || null,
                         s3Key: data.s3Key || null,
