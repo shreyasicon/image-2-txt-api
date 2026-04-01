@@ -219,7 +219,7 @@ describe('translate API', () => {
     expect(r?.translations.es).toBe('hola');
   });
 
-  it('translateText sends Authorization when getAccessToken returns a token', async () => {
+  it('translateText uses public POST only by default (no Authorization, even if getters exist)', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -228,19 +228,12 @@ describe('translate API', () => {
         translations: {},
       }),
     } as Response);
-    await translateText('x', { getAccessToken: async () => 'test-jwt' });
-    expect(fetchSpy).toHaveBeenCalledWith(
-      expect.stringMatching(/\/translate$/),
-      expect.objectContaining({
-        headers: expect.objectContaining({
-          Authorization: 'Bearer test-jwt',
-          'Content-Type': 'application/json',
-        }),
-      })
-    );
+    await translateText('x', { getAccessToken: async () => 'unused' });
+    const first = fetchSpy.mock.calls[0]?.[1] as { headers: Record<string, string> };
+    expect(first.headers.Authorization).toBeUndefined();
   });
 
-  it('translateText retries id token after access returns 401', async () => {
+  it('translateText retries with Bearer token when includeVaultAuth and public returns 401', async () => {
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce({
@@ -257,13 +250,16 @@ describe('translate API', () => {
         }),
       } as Response);
     const r = await translateText('a', {
+      includeVaultAuth: true,
       getAccessToken: async () => 'acc',
       getIdToken: async () => 'idtok',
     });
     expect(r?.translations.es).toBe('hola');
     expect(fetchSpy).toHaveBeenCalledTimes(2);
+    const first = fetchSpy.mock.calls[0]?.[1] as { headers: Record<string, string> };
+    expect(first.headers.Authorization).toBeUndefined();
     const second = fetchSpy.mock.calls[1]?.[1] as { headers: Record<string, string> };
-    expect(second.headers.Authorization).toBe('Bearer idtok');
+    expect(second.headers.Authorization).toBe('Bearer acc');
   });
 
   it('getTranslateLanguages returns data when ok', async () => {

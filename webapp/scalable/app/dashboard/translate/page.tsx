@@ -78,16 +78,10 @@ export default function TranslatePage() {
         selectedLangs.size > 0 ? Array.from(selectedLangs) : LANG_OPTIONS.map((l) => l.code);
       const data = await translateText(inputText, {
         target_languages: targetList,
-        ...(auth && {
-          getAccessToken: auth.getAccessToken,
-          getIdToken: auth.getIdToken,
-        }),
       });
       if (!data) {
         setTranslateError(
-          auth?.user
-            ? 'Translation failed. The translate API must accept JWTs from this app’s Cognito user pool (same login as the vault). If your pool is already wired on the API, try again.'
-            : 'Translation failed. Sign in with your vault account so we can send your Cognito token, or enable anonymous POST /translate on the API.'
+          'Translation failed. Check your text and connection. If the API blocks this site, CORS must allow your Amplify origin.'
         );
         return;
       }
@@ -139,11 +133,11 @@ export default function TranslatePage() {
 
       {!auth?.user && !auth?.loading && (
         <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-          <span className="text-foreground font-medium">Tip:</span> You can try Translate without signing in if the API allows it.{' '}
+          <span className="text-foreground font-medium">Tip:</span> Translate uses the public HTTP API (no vault login required).{' '}
           <Link href="/dashboard/auth" className="text-primary underline underline-offset-2">
             Sign in
           </Link>{' '}
-          to use the same Cognito session as the rest of the vault (recommended if the API requires auth).
+          only if you want your session for other dashboard features.
         </div>
       )}
 

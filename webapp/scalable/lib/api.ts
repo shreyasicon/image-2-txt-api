@@ -470,15 +470,17 @@ function formatTranslateApiError(data: Record<string, unknown>): string {
 }
 
 /**
- * POST /translate — tries, in order: Cognito access token, Cognito ID token (API Gateway / backends differ),
- * then an unauthenticated request (works only if the API allows anonymous translate).
+ * POST /translate — **public API default:** one unauthenticated JSON request (no vault/Cognito tokens).
+ * Optional: set `includeVaultAuth` + token getters to retry with Bearer tokens if the API returns 401/403
+ * and your API Gateway is wired to *your* Cognito pool (not the common case for a public translate service).
  */
 export async function translateText(
   text: string,
   options?: {
     source_lang?: string;
     target_languages?: string[];
-    /** Same Cognito session as the vault webapp (aws-amplify). */
+    /** When true, after a 401/403 on the public call, retry with access token then ID token. */
+    includeVaultAuth?: boolean;
     getAccessToken?: () => Promise<string | null>;
     getIdToken?: () => Promise<string | null>;
   }
@@ -490,38 +492,44 @@ export async function translateText(
     ...(options?.target_languages?.length && { target_languages: options.target_languages }),
   });
 
-  type HeaderSet = Record<string, string>;
-  const attempts: HeaderSet[] = [];
-  const pushUnique = (h: HeaderSet) => {
-    const sig = JSON.stringify(h);
-    if (!attempts.some((x) => JSON.stringify(x) === sig)) attempts.push(h);
-  };
+  const publicHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
 
   try {
-    if (options?.getAccessToken) {
-      const t = await options.getAccessToken();
-      if (t) pushUnique({ 'Content-Type': 'application/json', Authorization: `Bearer ${t}` });
-    }
-    if (options?.getIdToken) {
-      const t = await options.getIdToken();
-      if (t) pushUnique({ 'Content-Type': 'application/json', Authorization: `Bearer ${t}` });
-    }
-    pushUnique({ 'Content-Type': 'application/json' });
+    let res = await fetch(`${base}/translate`, { method: 'POST', headers: publicHeaders, body });
+    let data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
 
-    let lastDetail = '';
-    for (const headers of attempts) {
-      const res = await fetch(`${base}/translate`, { method: 'POST', headers, body });
-      const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-      if (res.ok) {
-        return data as unknown as TranslateResponse;
-      }
-      lastDetail = formatTranslateApiError(data);
-      if (res.status !== 401 && res.status !== 403) {
-        console.error('Translate API error:', lastDetail);
-        return null;
+    if (res.ok) {
+      return data as unknown as TranslateResponse;
+    }
+
+    let lastDetail = formatTranslateApiError(data);
+
+    if (
+      (res.status === 401 || res.status === 403) &&
+      options?.includeVaultAuth &&
+      (options.getAccessToken || options.getIdToken)
+    ) {
+      const tokenAttempts: Array<() => Promise<string | null>> = [];
+      if (options.getAccessToken) tokenAttempts.push(options.getAccessToken);
+      if (options.getIdToken) tokenAttempts.push(options.getIdToken);
+
+      for (const getTok of tokenAttempts) {
+        const token = await getTok();
+        if (!token) continue;
+        res = await fetch(`${base}/translate`, {
+          method: 'POST',
+          headers: { ...publicHeaders, Authorization: `Bearer ${token}` },
+          body,
+        });
+        data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+        if (res.ok) {
+          return data as unknown as TranslateResponse;
+        }
+        lastDetail = formatTranslateApiError(data);
       }
     }
-    console.error('Translate API error (after auth attempts):', lastDetail);
+
+    console.error('Translate API error:', lastDetail);
     return null;
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
