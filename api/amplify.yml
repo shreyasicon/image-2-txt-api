@@ -1,9 +1,11 @@
+# App root in Amplify must be this folder (api/) when using this file.
 version: 1
 frontend:
   phases:
     preBuild:
       commands:
         - node scripts/replace-api-url.js
+        - grep -q try-compare-grid index.html || (echo "ERROR: index.html missing expected UI"; exit 1)
     build:
       commands: []
   artifacts:

@@ -1,0 +1,25 @@
+# Repository-root build for the API demo static site (api/index.html).
+# In AWS Amplify → App → Hosting → Build settings: set "App root" to /
+# (repository root). Do NOT set App root to webapp/scalable — that deploys the Next.js app.
+#
+# If you prefer App root = api, Amplify uses api/amplify.yml instead; both are valid.
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - node api/scripts/replace-api-url.js
+        - grep -q try-compare-grid api/index.html || (echo "ERROR: api/index.html missing expected UI"; exit 1)
+    build:
+      commands: []
+  artifacts:
+    baseDirectory: api
+    files:
+      - "**/*"
+  cache:
+    paths: []
+  customHeaders:
+    - pattern: "**/*"
+      headers:
+        - key: "Cache-Control"
+          value: "no-cache, no-store, must-revalidate"
