@@ -8,7 +8,7 @@ import { listMyS3Links, type UserS3Link } from '@/lib/api';
 import { VaultCard } from '@/components/vault-card';
 import { GlassCard } from '@/components/glass-card';
 import { GlowButton } from '@/components/glow-button';
-import { Trash2, Filter, ImageIcon } from 'lucide-react';
+import { Trash2, Filter, ImageIcon, Pencil } from 'lucide-react';
 
 interface VaultItem {
   id: string;
@@ -29,6 +29,10 @@ interface UploadedImagesSectionProps {
   localVaultImages: VaultItem[];
   onRemoveExtractedImage: (id: string) => void;
   onDeleteVaultImage: (id: string) => void;
+  titleOverrides: Record<string, string>;
+  onEditS3Title: (jobId: string, currentTitle: string) => void;
+  onEditExtractedTitle: (id: string, currentTitle: string) => void;
+  onEditVaultImageTitle: (id: string, currentTitle: string) => void;
 }
 
 /** Split out to keep `VaultPage` cognitive complexity within Sonar limits. */
@@ -40,6 +44,10 @@ function UploadedImagesSection({
   localVaultImages,
   onRemoveExtractedImage,
   onDeleteVaultImage,
+  titleOverrides,
+  onEditS3Title,
+  onEditExtractedTitle,
+  onEditVaultImageTitle,
 }: Readonly<UploadedImagesSectionProps>) {
   if (s3Loading && !hasAnyUploadedImage) {
     return (
@@ -49,59 +57,95 @@ function UploadedImagesSection({
   if (hasAnyUploadedImage) {
     return (
       <ul className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {s3Items.map((link) => (
-          <li key={`s3-${link.jobId}`}>
-            <GlassCard className="overflow-hidden p-0">
-              <div className="aspect-square relative bg-muted">
-                {link.previewUrl ? (
-                  <img
-                    src={link.previewUrl}
-                    alt={link.filename || 'Uploaded image'}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                    <ImageIcon className="w-12 h-12" aria-hidden />
+        {s3Items.map((link) => {
+          const overrideKey = `s3:${link.jobId}`;
+          const displayTitle = titleOverrides[overrideKey] || link.filename || link.jobId;
+          return (
+            <li key={`s3-${link.jobId}`}>
+              <GlassCard className="overflow-hidden p-0">
+                <div className="aspect-square relative bg-muted">
+                  {link.previewUrl ? (
+                    <img
+                      src={link.previewUrl}
+                      alt={displayTitle || 'Uploaded image'}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                      <ImageIcon className="w-12 h-12" aria-hidden />
+                    </div>
+                  )}
+                </div>
+                <div className="p-3 flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground mb-0.5">Cloud upload</p>
+                    <p className="text-sm font-medium truncate" title={displayTitle}>
+                      {displayTitle || link.jobId}
+                    </p>
+                    {link.createdAt && (
+                      <p className="text-xs text-muted-foreground mt-1">{new Date(link.createdAt).toLocaleString()}</p>
+                    )}
                   </div>
-                )}
-              </div>
-              <div className="p-3">
-                <p className="text-xs text-muted-foreground mb-0.5">Cloud upload</p>
-                <p className="text-sm font-medium truncate" title={link.filename}>{link.filename || link.jobId}</p>
-                {link.createdAt && (
-                  <p className="text-xs text-muted-foreground mt-1">{new Date(link.createdAt).toLocaleString()}</p>
-                )}
-              </div>
-            </GlassCard>
-          </li>
-        ))}
+                  <button
+                    type="button"
+                    onClick={() => onEditS3Title(link.jobId, displayTitle || '')}
+                    aria-label="Edit title"
+                    className="p-2 rounded-lg border border-border hover:bg-muted/50 transition-colors flex-shrink-0"
+                    title="Edit title"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                </div>
+              </GlassCard>
+            </li>
+          );
+        })}
         {extractedImages.map((img) => (
-          <li key={`ex-${img.id}`}>
+          (() => {
+            const overrideKey = `ex:${img.id}`;
+            const displayTitle = titleOverrides[overrideKey] || img.filename;
+            return (
+              <li key={`ex-${img.id}`}>
             <GlassCard className="overflow-hidden p-0 group relative">
               <div className="aspect-square relative bg-muted">
                 <img
                   src={img.dataUrl}
-                  alt={img.filename}
+                  alt={displayTitle || img.filename}
                   className="w-full h-full object-cover"
                 />
               </div>
               <div className="p-3 flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <p className="text-xs text-muted-foreground mb-0.5">From Upload</p>
-                  <p className="text-sm font-medium truncate" title={img.filename}>{img.filename}</p>
+                  <p className="text-sm font-medium truncate" title={displayTitle}>
+                    {displayTitle || img.filename}
+                  </p>
                   <p className="text-xs text-muted-foreground">{img.date}</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => onRemoveExtractedImage(img.id)}
-                  className="p-2 rounded-lg border border-destructive/50 text-destructive hover:bg-destructive/10 transition-colors flex-shrink-0"
-                  title="Remove from vault"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => onEditExtractedTitle(img.id, displayTitle || img.filename)}
+                    aria-label="Edit title"
+                    className="p-2 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                    title="Edit title"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onRemoveExtractedImage(img.id)}
+                    className="p-2 rounded-lg border border-destructive/50 text-destructive hover:bg-destructive/10 transition-colors"
+                    title="Remove from vault"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </GlassCard>
-          </li>
+              </li>
+            );
+          })()
         ))}
         {localVaultImages.map((item) => (
           <li key={`lv-${item.id}`}>
@@ -119,14 +163,25 @@ function UploadedImagesSection({
                   <p className="text-sm font-medium truncate" title={item.title}>{item.title}</p>
                   <p className="text-xs text-muted-foreground">{item.date}</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => onDeleteVaultImage(item.id)}
-                  className="p-2 rounded-lg border border-destructive/50 text-destructive hover:bg-destructive/10 transition-colors flex-shrink-0"
-                  title="Remove from vault"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => onEditVaultImageTitle(item.id, item.title)}
+                    aria-label="Edit title"
+                    className="p-2 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                    title="Edit title"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDeleteVaultImage(item.id)}
+                    className="p-2 rounded-lg border border-destructive/50 text-destructive hover:bg-destructive/10 transition-colors"
+                    title="Remove from vault"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </GlassCard>
           </li>
@@ -152,6 +207,7 @@ export default function VaultPage() {
   const [s3Items, setS3Items] = useState<UserS3Link[]>([]);
   const [s3Loading, setS3Loading] = useState(false);
   const [extractedImages, setExtractedImages] = useState<ExtractedVaultImage[]>([]);
+  const [titleOverrides, setTitleOverrides] = useState<Record<string, string>>({});
   const [filter, setFilter] = useState<'all' | 'caption' | 'text'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -160,6 +216,18 @@ export default function VaultPage() {
   const [addImageTitle, setAddImageTitle] = useState('');
   const [addImageFile, setAddImageFile] = useState<File | null>(null);
   const [addImageSaving, setAddImageSaving] = useState(false);
+
+  const TITLE_OVERRIDES_KEY = 'vaultImageTitleOverrides';
+
+  const loadTitleOverrides = useCallback(() => {
+    try {
+      const raw = localStorage.getItem(TITLE_OVERRIDES_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      setTitleOverrides(parsed && typeof parsed === 'object' ? parsed : {});
+    } catch (_) {
+      setTitleOverrides({});
+    }
+  }, []);
 
   const loadS3Links = useCallback(async () => {
     const getToken = auth?.getIdToken;
@@ -195,13 +263,14 @@ export default function VaultPage() {
         const parsed = JSON.parse(stored);
         setItems(parsed);
       }
+      loadTitleOverrides();
     } catch (error) {
       console.error('Error loading vault items:', error);
     } finally {
       setIsLoading(false);
     }
     loadS3Links();
-  }, [auth?.user, auth?.isConfigured, auth?.loading, router, loadS3Links]);
+  }, [auth?.user, auth?.isConfigured, auth?.loading, router, loadS3Links, loadTitleOverrides]);
 
   const EXTRACTED_IMAGES_KEY = 'extractedImages';
   const loadExtractedImages = useCallback(() => {
@@ -254,6 +323,40 @@ export default function VaultPage() {
       setItems(updated);
       localStorage.setItem('vaultItems', JSON.stringify(updated));
     }
+  };
+
+  const saveTitleOverride = (key: string, nextTitle: string) => {
+    setTitleOverrides((prev) => {
+      const next = { ...prev, [key]: nextTitle };
+      localStorage.setItem(TITLE_OVERRIDES_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const handleEditS3Title = (jobId: string, currentTitle: string) => {
+    const nextTitle = globalThis.prompt('Edit title', currentTitle || '');
+    if (nextTitle == null) return;
+    const trimmed = nextTitle.trim();
+    if (!trimmed) return;
+    saveTitleOverride(`s3:${jobId}`, trimmed);
+  };
+
+  const handleEditExtractedTitle = (id: string, currentTitle: string) => {
+    const nextTitle = globalThis.prompt('Edit title', currentTitle || '');
+    if (nextTitle == null) return;
+    const trimmed = nextTitle.trim();
+    if (!trimmed) return;
+    saveTitleOverride(`ex:${id}`, trimmed);
+  };
+
+  const handleEditVaultImageTitle = (id: string, currentTitle: string) => {
+    const nextTitle = globalThis.prompt('Edit title', currentTitle || '');
+    if (nextTitle == null) return;
+    const trimmed = nextTitle.trim();
+    if (!trimmed) return;
+    const updated = items.map((it) => (it.id === id ? { ...it, title: trimmed } : it));
+    setItems(updated);
+    localStorage.setItem('vaultItems', JSON.stringify(updated));
   };
 
   const handleRemoveExtractedImage = (id: string) => {
@@ -360,6 +463,10 @@ export default function VaultPage() {
             localVaultImages={localVaultImages}
             onRemoveExtractedImage={handleRemoveExtractedImage}
             onDeleteVaultImage={handleDelete}
+            titleOverrides={titleOverrides}
+            onEditS3Title={handleEditS3Title}
+            onEditExtractedTitle={handleEditExtractedTitle}
+            onEditVaultImageTitle={handleEditVaultImageTitle}
           />
         </div>
 

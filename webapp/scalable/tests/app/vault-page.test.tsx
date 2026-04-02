@@ -60,4 +60,26 @@ describe('VaultPage', () => {
       expect(screen.getByText(/Showing 1 of 2 items/)).toBeInTheDocument();
     });
   });
+
+  it('renders edit title buttons for saved image items', async () => {
+    const { useAuth } = await import('@/components/auth-provider');
+    vi.mocked(useAuth).mockReturnValue(createAuthMock());
+    localStorage.setItem(
+      'vaultItems',
+      JSON.stringify([
+        {
+          id: 'img-1',
+          type: 'image',
+          title: 'Old title',
+          content: 'data:image/png;base64,AAA=',
+          date: '2024-01-01',
+        },
+      ])
+    );
+
+    render(<VaultPage />);
+    await waitFor(() => {
+      expect(screen.getAllByLabelText(/edit title/i).length).toBeGreaterThanOrEqual(1);
+    });
+  });
 });
